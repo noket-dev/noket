@@ -35,8 +35,8 @@ Applies repo-wide; a package-level `AGENTS.md` takes precedence.
 
 - Dev shell: `nix develop` (or `direnv allow`).
 - Build: `make build` (`nix build .#noket` → `result/bin/{noket,noketd}`) or `make build-local` for `bin/`.
-- Check: `make check` (gofmt check, `go vet`, `go test`); separately `make fmt`, `make lint`, `make test`,
-  `make test-race`.
+- Check: `make check` (gofumpt check, `golangci-lint`, `go test`); separately `make fmt`, `make lint`,
+  `make test`, `make test-race`.
 - One test: `go test ./internal/tui -run TestName`.
 - Proto: `make proto-lint` and `make generate`.
 - Build without touching `result`: `nix build .#noket --no-link --print-out-paths`.

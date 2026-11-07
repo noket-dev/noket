@@ -242,7 +242,7 @@ func TestRunRegistersAndForwards(t *testing.T) {
 	defer func() {
 		cancel()
 		select {
-		case <-runErr:
+		case <-runErr: //nolint:errcheck // only the exit itself matters here
 		case <-time.After(5 * time.Second):
 			t.Error("noketd did not stop")
 		}
