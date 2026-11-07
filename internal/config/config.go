@@ -17,7 +17,6 @@ import (
 
 const (
 	defaultAPIBaseURL     = "https://api.noket.dev"
-	defaultWebBaseURL     = "https://noket.dev"
 	defaultTunnelURL      = "wss://tunnel.noket.dev/ws"
 	defaultProbeTimeout   = 10 * time.Second
 	defaultWriteTimeout   = 10 * time.Second
@@ -38,9 +37,6 @@ func Default() *types.Config {
 func ApplyDefaults(cfg *types.Config) {
 	if cfg.API.BaseURL == "" {
 		cfg.API.BaseURL = defaultAPIBaseURL
-	}
-	if strings.TrimSpace(cfg.Web.BaseURL) == "" {
-		cfg.Web.BaseURL = defaultWebBaseURL
 	}
 	if cfg.Tunnel.URL == "" {
 		cfg.Tunnel.URL = defaultTunnelURL
@@ -121,7 +117,6 @@ func SaveFile(path string, cfg *types.Config) error {
 // edits do not accumulate cosmetic differences.
 func Normalize(cfg *types.Config) {
 	cfg.API.BaseURL = strings.TrimRight(strings.TrimSpace(cfg.API.BaseURL), "/")
-	cfg.Web.BaseURL = strings.TrimRight(strings.TrimSpace(cfg.Web.BaseURL), "/")
 	cfg.Tunnel.URL = strings.TrimSpace(cfg.Tunnel.URL)
 	cfg.Tunnel.Name = strings.TrimSpace(cfg.Tunnel.Name)
 

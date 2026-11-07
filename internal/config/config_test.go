@@ -336,36 +336,16 @@ func TestStoreMutate(t *testing.T) {
 	}
 }
 
-func TestApplyDefaultsSplitsWebAndAPI(t *testing.T) {
+func TestApplyDefaultsAndNormalizeAPIBase(t *testing.T) {
 	production := config.Default()
-	if production.API.BaseURL != "https://api.noket.dev" || production.Web.BaseURL != "https://noket.dev" {
-		t.Fatalf("production defaults = api %q, web %q", production.API.BaseURL, production.Web.BaseURL)
+	if production.API.BaseURL != "https://api.noket.dev" {
+		t.Fatalf("production api base = %q", production.API.BaseURL)
 	}
 
-	local := &types.Config{
-		API: types.APIConfig{BaseURL: "http://127.0.0.1:3000"},
-		Web: types.WebConfig{BaseURL: "http://127.0.0.1:3000"},
-	}
+	local := &types.Config{API: types.APIConfig{BaseURL: " http://127.0.0.1:3000/ "}}
 	config.ApplyDefaults(local)
-	if local.API.BaseURL != "http://127.0.0.1:3000" || local.Web.BaseURL != "http://127.0.0.1:3000" {
-		t.Fatalf("local bases = api %q, web %q", local.API.BaseURL, local.Web.BaseURL)
-	}
-
-	split := &types.Config{
-		API: types.APIConfig{BaseURL: "https://api.noket.dev"},
-		Web: types.WebConfig{BaseURL: "https://noket.dev/"},
-	}
-	config.ApplyDefaults(split)
-	config.Normalize(split)
-	if split.Web.BaseURL != "https://noket.dev" {
-		t.Fatalf("explicit web base = %q", split.Web.BaseURL)
-	}
-}
-
-func TestValidateRejectsInvalidWebBase(t *testing.T) {
-	cfg := sampleConfig()
-	cfg.Web.BaseURL = "ftp://noket.dev"
-	if err := config.Validate(cfg); err == nil || !strings.Contains(err.Error(), "web.base_url") {
-		t.Fatalf("invalid web base error = %v", err)
+	config.Normalize(local)
+	if local.API.BaseURL != "http://127.0.0.1:3000" {
+		t.Fatalf("local api base = %q", local.API.BaseURL)
 	}
 }

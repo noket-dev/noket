@@ -49,19 +49,10 @@ func Validate(cfg *types.Config) error {
 	if err != nil || (u.Scheme != "ws" && u.Scheme != "wss") || u.Host == "" {
 		return errors.New("tunnel.url must be a ws:// or wss:// URL")
 	}
-	for _, endpoint := range []struct {
-		field string
-		raw   string
-	}{
-		{"api.base_url", cfg.API.BaseURL},
-		{"web.base_url", cfg.Web.BaseURL},
-	} {
-		if endpoint.raw == "" {
-			continue
-		}
-		parsed, err := url.Parse(endpoint.raw)
+	if cfg.API.BaseURL != "" {
+		parsed, err := url.Parse(cfg.API.BaseURL)
 		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-			return fmt.Errorf("%s must be an http:// or https:// URL", endpoint.field)
+			return errors.New("api.base_url must be an http:// or https:// URL")
 		}
 	}
 	if len(cfg.Tunnel.Name) > 128 {
