@@ -81,6 +81,12 @@ type Daemon struct {
 	startedAt  time.Time
 	activeName string
 	lastErr    string
+
+	// writeMu orders status writes against shutdown. arpc's connection
+	// callbacks can fire after Run has returned, and a status file written
+	// then would outlive the daemon.
+	writeMu sync.Mutex
+	stopped bool
 }
 
 func New(opts Options) *Daemon {
@@ -107,14 +113,10 @@ func (a *Daemon) Ready() <-chan struct{} { return a.ready }
 
 // Run connects, registers and reconnects until ctx is canceled.
 func (a *Daemon) Run(ctx context.Context) error {
-	if err := config.WriteStatus(&types.DaemonStatus{
-		PID:       os.Getpid(),
-		NodeID:    a.nodeID,
-		NodeName:  a.nodeName(),
-		StartedAt: a.startedAt,
-	}); err != nil {
-		a.logger.Warn().Err(err).Msg("write noketd status")
-	}
+	// Runs after every return below, so no status file appears once Run has
+	// handed control back and the caller removes the status.
+	defer a.stopStatus()
+	a.writeStatus(false, false)
 
 	var bo backoff
 	for {
@@ -271,6 +273,14 @@ func (a *Daemon) recordError(err error) {
 }
 
 func (a *Daemon) writeStatus(connected, registered bool) {
+	// Held across the write so stopStatus waits for it instead of letting a
+	// temp file appear while the caller is tearing the config dir down.
+	a.writeMu.Lock()
+	defer a.writeMu.Unlock()
+	if a.stopped {
+		return
+	}
+
 	a.statusMu.Lock()
 	status := &types.DaemonStatus{
 		PID:        os.Getpid(),
@@ -286,6 +296,14 @@ func (a *Daemon) writeStatus(connected, registered bool) {
 	if err := config.WriteStatus(status); err != nil {
 		a.logger.Warn().Err(err).Msg("write noketd status")
 	}
+}
+
+// stopStatus drops the status writes that connection callbacks still attempt
+// after Run returns.
+func (a *Daemon) stopStatus() {
+	a.writeMu.Lock()
+	a.stopped = true
+	a.writeMu.Unlock()
 }
 
 func (a *Daemon) signalReady() {
