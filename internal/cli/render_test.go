@@ -21,7 +21,7 @@ func TestInteractiveOutputRejectsNonTerminals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	if interactiveOutput(file) {
 		t.Fatal("a regular file is not a terminal")
 	}

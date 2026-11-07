@@ -146,7 +146,7 @@ func (h *Handler) forward(client *arpc.Client, open *tunnelv1.ForwardOpen) {
 			Str("upstream", upstream.Name).
 			Str("model", model).
 			Msg("local request failed")
-		h.sendChunk(client, &tunnelv1.ForwardChunk{
+		_ = h.sendChunk(client, &tunnelv1.ForwardChunk{
 			RequestId: open.RequestId,
 			Status:    http.StatusBadGateway,
 			Headers:   JSONHeaders(),

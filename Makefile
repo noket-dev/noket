@@ -35,13 +35,13 @@ test-race:
 	$(DEV) go test -race ./...
 
 lint:
-	$(DEV) go vet ./...
+	$(DEV) golangci-lint run
 
 fmt:
-	$(DEV) gofmt -w $(GO_SOURCES)
+	$(DEV) gofumpt -w $(GO_SOURCES)
 
 fmt-check:
-	test -z "$$($(DEV) gofmt -l $(GO_SOURCES))"
+	test -z "$$($(DEV) gofumpt -l $(GO_SOURCES))"
 
 proto-lint:
 	$(DEV) buf lint
