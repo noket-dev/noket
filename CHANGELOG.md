@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-11-07
+
+### Added
+- One-command installers: `install.sh` for macOS and Linux and `install.ps1` for Windows
+  download the release for your platform, verify its SHA-256 checksum, install `noket`
+  and `noketd`, and add them to `PATH`.
+- The installers enable the agent at login — launchd on macOS, a systemd user unit on
+  Linux, and a Scheduled Task on Windows — and install shell completions for the current
+  shell (bash, zsh, fish, PowerShell).
+- Installer options: `--no-autostart` (`-NoAutostart`), `--no-completion`
+  (`-NoCompletion`), `--prefix DIR` (`-InstallDir DIR`), and `--uninstall [--purge]`
+  (`-Uninstall`).
+
+### Changed
+- A supervised `noket up --foreground` without a saved login now waits for
+  `noket login` and starts in place. It used to exit, and the supervisor restarted it
+  every 30 seconds (5 minutes on Windows), writing a `noketd.log` line each time.
+- After installing, the installers print the exact command to add the install directory
+  to `PATH` and warn when another `noket` earlier in `PATH` would shadow the new one.
+
+### Security
+- The installers verify the downloaded archive against the release's `checksums.txt`
+  before installing.
+
 ## [0.1.0] - 2026-11-07
 
 ### Added
@@ -23,4 +47,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Login secrets are polled over the API and never appear in the browser URL; the browser only ever sees the authorization id.
 
+[0.1.1]: https://github.com/noket-dev/noket/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/noket-dev/noket/releases/tag/v0.1.0
