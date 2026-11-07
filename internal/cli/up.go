@@ -24,7 +24,7 @@ func newUpCmd(version string) *cobra.Command {
 			return runUp(cmd, foreground, name, version)
 		},
 	}
-	cmd.Flags().BoolVar(&foreground, "foreground", false, "run in the foreground, write no pid file, and leave supervision to systemd / Docker")
+	cmd.Flags().BoolVar(&foreground, "foreground", false, "run in the foreground, write no pid file, leave supervision to systemd / Docker, and wait for `noket login` instead of exiting")
 	cmd.Flags().StringVar(&name, "name", "", "override the node display name (does not create a second node)")
 	return cmd
 }
@@ -34,10 +34,15 @@ func runUp(cmd *cobra.Command, foreground bool, name, version string) (err error
 		return fmt.Errorf("noketd is already running (pid %d); not starting a second instance", pid)
 	}
 	if _, err := config.LoadCredentials(); err != nil {
-		if errors.Is(err, config.ErrNoCredentials) {
+		if !errors.Is(err, config.ErrNoCredentials) {
+			return err
+		}
+		// A supervised foreground process waits for the login inside noketd so
+		// the supervisor does not restart it over and over; a detached daemon
+		// fails now so `noket up` reports the missing login.
+		if !foreground {
 			return errors.New("not logged in, run noket login first")
 		}
-		return err
 	}
 
 	if foreground {

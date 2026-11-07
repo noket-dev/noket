@@ -260,9 +260,9 @@ function Enable-NoketAutostart {
 
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arguments
 
-    # AtLogOn starts the agent after a boot; the repetition retries it when it
-    # exited because the user had not logged in yet. IgnoreNew keeps the retry
-    # from starting a second daemon while the first is connected.
+    # AtLogOn starts the agent after a boot; the repetition restarts it when it
+    # exited for another reason. IgnoreNew keeps the retry from starting a
+    # second daemon while the first is waiting for a login or connected.
     $triggers = @(
         (New-ScheduledTaskTrigger -AtLogOn -User $userId),
         (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
@@ -373,5 +373,5 @@ Write-Host 'Open a new terminal so the updated PATH takes effect.'
 Write-Host "Logs: $(Join-Path $ConfigDir 'noketd.log')"
 if (-not (Test-Path -LiteralPath (Join-Path $ConfigDir 'credentials.json'))) {
     Write-Host ''
-    Write-Host 'The agent retries until you run: noket login'
+    Write-Host 'The agent waits until you run: noket login'
 }

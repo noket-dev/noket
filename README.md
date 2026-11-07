@@ -23,7 +23,7 @@ irm https://raw.githubusercontent.com/noket-dev/noket/main/install.ps1 | iex
 The installers download the release for this platform, verify its SHA-256 checksum, install `noket` and `noketd`,
 add them to `PATH`, install shell completions for the current shell, and enable the agent at login: launchd on
 macOS, a systemd user unit on Linux, and a Scheduled Task on Windows. Run `noket login` when the installer
-cannot open a browser.
+cannot open a browser; the agent waits for it.
 
 Use `--no-autostart` (`-NoAutostart`) to skip autostart, `--no-completion` (`-NoCompletion`) to skip shell
 completions, `--prefix DIR` (`-InstallDir DIR`) to choose the install directory, and `--uninstall [--purge]`
