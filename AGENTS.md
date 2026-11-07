@@ -53,6 +53,7 @@ Applies repo-wide; a package-level `AGENTS.md` takes precedence.
   popups, and help line at a narrow and a wide terminal.
 - After `go.mod`/`go.sum` changes: stage them (the Nix source is `cleanSource`, tracked files only), set
   `vendorHash = pkgs.lib.fakeHash;` in `flake.nix`, run `nix build .#noket`, and paste the `got:` hash back.
+  Dependabot pull requests get this from `.github/workflows/vendor-hash.yml`.
 - Never claim verification without the format check, vet, and tests; say what you skipped.
 
 ## Git
