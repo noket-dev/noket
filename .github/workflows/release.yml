@@ -4,13 +4,22 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual runs are dry runs: they build a snapshot and publish nothing.
+  workflow_dispatch:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -23,9 +32,42 @@ jobs:
       - name: Enable the Nix cache
         uses: DeterminateSystems/magic-nix-cache-action@v15
 
+      # A release tag has to be vX.Y.Z and point at a commit on main.
+      - name: Validate the tag
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          tag="$GITHUB_REF_NAME"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::tag $tag is not a vX.Y.Z release tag"
+            exit 1
+          fi
+          git fetch --no-tags --quiet origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+            echo "::error::tag $tag does not point at a commit on main"
+            exit 1
+          fi
+
       # goreleaser, Go, and git all come from the flake's dev shell, so CI
       # releases with the same toolchain versions as local `nix develop`.
       - name: Run GoReleaser
+        if: github.event_name == 'push'
         run: nix develop --command -- goreleaser release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build a snapshot (dry run)
+        if: github.event_name == 'workflow_dispatch'
+        run: nix develop --command -- goreleaser release --clean --snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Artifact attestations for private repositories need GitHub Enterprise.
+      - name: Attest build provenance
+        if: github.event_name == 'push' && !github.event.repository.private
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
