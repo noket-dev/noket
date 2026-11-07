@@ -33,17 +33,21 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// AuthServiceExchangeCliAuthorizationCodeProcedure is the fully-qualified name of the AuthService's
-	// ExchangeCliAuthorizationCode RPC.
-	AuthServiceExchangeCliAuthorizationCodeProcedure = "/noket.v1.AuthService/ExchangeCliAuthorizationCode"
+	// AuthServiceCreateCliAuthorizationProcedure is the fully-qualified name of the AuthService's
+	// CreateCliAuthorization RPC.
+	AuthServiceCreateCliAuthorizationProcedure = "/noket.v1.AuthService/CreateCliAuthorization"
+	// AuthServicePollCliAuthorizationProcedure is the fully-qualified name of the AuthService's
+	// PollCliAuthorization RPC.
+	AuthServicePollCliAuthorizationProcedure = "/noket.v1.AuthService/PollCliAuthorization"
 )
 
 // AuthServiceClient is a client for the noket.v1.AuthService service.
 type AuthServiceClient interface {
-	// Browser-assisted login for the noket CLI. The console page mints a
-	// one-time code from an authenticated session; the CLI redeems it for the
-	// same JWT a browser login would issue.
-	ExchangeCliAuthorizationCode(context.Context, *connect.Request[v1.ExchangeCliAuthorizationCodeRequest]) (*connect.Response[v1.ExchangeCliAuthorizationCodeResponse], error)
+	// Unauthenticated: the CLI has no token yet, which is the point of the flow.
+	// The secret stays in the CLI; the browser only ever sees the id.
+	CreateCliAuthorization(context.Context, *connect.Request[v1.CreateCliAuthorizationRequest]) (*connect.Response[v1.CreateCliAuthorizationResponse], error)
+	// Unauthenticated as well: the secret carried here stands in for the token.
+	PollCliAuthorization(context.Context, *connect.Request[v1.PollCliAuthorizationRequest]) (*connect.Response[v1.PollCliAuthorizationResponse], error)
 }
 
 // NewAuthServiceClient constructs a client for the noket.v1.AuthService service. By default, it
@@ -57,10 +61,16 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 	baseURL = strings.TrimRight(baseURL, "/")
 	authServiceMethods := v1.File_noket_v1_auth_proto.Services().ByName("AuthService").Methods()
 	return &authServiceClient{
-		exchangeCliAuthorizationCode: connect.NewClient[v1.ExchangeCliAuthorizationCodeRequest, v1.ExchangeCliAuthorizationCodeResponse](
+		createCliAuthorization: connect.NewClient[v1.CreateCliAuthorizationRequest, v1.CreateCliAuthorizationResponse](
 			httpClient,
-			baseURL+AuthServiceExchangeCliAuthorizationCodeProcedure,
-			connect.WithSchema(authServiceMethods.ByName("ExchangeCliAuthorizationCode")),
+			baseURL+AuthServiceCreateCliAuthorizationProcedure,
+			connect.WithSchema(authServiceMethods.ByName("CreateCliAuthorization")),
+			connect.WithClientOptions(opts...),
+		),
+		pollCliAuthorization: connect.NewClient[v1.PollCliAuthorizationRequest, v1.PollCliAuthorizationResponse](
+			httpClient,
+			baseURL+AuthServicePollCliAuthorizationProcedure,
+			connect.WithSchema(authServiceMethods.ByName("PollCliAuthorization")),
 			connect.WithClientOptions(opts...),
 		),
 	}
@@ -68,20 +78,27 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	exchangeCliAuthorizationCode *connect.Client[v1.ExchangeCliAuthorizationCodeRequest, v1.ExchangeCliAuthorizationCodeResponse]
+	createCliAuthorization *connect.Client[v1.CreateCliAuthorizationRequest, v1.CreateCliAuthorizationResponse]
+	pollCliAuthorization   *connect.Client[v1.PollCliAuthorizationRequest, v1.PollCliAuthorizationResponse]
 }
 
-// ExchangeCliAuthorizationCode calls noket.v1.AuthService.ExchangeCliAuthorizationCode.
-func (c *authServiceClient) ExchangeCliAuthorizationCode(ctx context.Context, req *connect.Request[v1.ExchangeCliAuthorizationCodeRequest]) (*connect.Response[v1.ExchangeCliAuthorizationCodeResponse], error) {
-	return c.exchangeCliAuthorizationCode.CallUnary(ctx, req)
+// CreateCliAuthorization calls noket.v1.AuthService.CreateCliAuthorization.
+func (c *authServiceClient) CreateCliAuthorization(ctx context.Context, req *connect.Request[v1.CreateCliAuthorizationRequest]) (*connect.Response[v1.CreateCliAuthorizationResponse], error) {
+	return c.createCliAuthorization.CallUnary(ctx, req)
+}
+
+// PollCliAuthorization calls noket.v1.AuthService.PollCliAuthorization.
+func (c *authServiceClient) PollCliAuthorization(ctx context.Context, req *connect.Request[v1.PollCliAuthorizationRequest]) (*connect.Response[v1.PollCliAuthorizationResponse], error) {
+	return c.pollCliAuthorization.CallUnary(ctx, req)
 }
 
 // AuthServiceHandler is an implementation of the noket.v1.AuthService service.
 type AuthServiceHandler interface {
-	// Browser-assisted login for the noket CLI. The console page mints a
-	// one-time code from an authenticated session; the CLI redeems it for the
-	// same JWT a browser login would issue.
-	ExchangeCliAuthorizationCode(context.Context, *connect.Request[v1.ExchangeCliAuthorizationCodeRequest]) (*connect.Response[v1.ExchangeCliAuthorizationCodeResponse], error)
+	// Unauthenticated: the CLI has no token yet, which is the point of the flow.
+	// The secret stays in the CLI; the browser only ever sees the id.
+	CreateCliAuthorization(context.Context, *connect.Request[v1.CreateCliAuthorizationRequest]) (*connect.Response[v1.CreateCliAuthorizationResponse], error)
+	// Unauthenticated as well: the secret carried here stands in for the token.
+	PollCliAuthorization(context.Context, *connect.Request[v1.PollCliAuthorizationRequest]) (*connect.Response[v1.PollCliAuthorizationResponse], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -91,16 +108,24 @@ type AuthServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	authServiceMethods := v1.File_noket_v1_auth_proto.Services().ByName("AuthService").Methods()
-	authServiceExchangeCliAuthorizationCodeHandler := connect.NewUnaryHandler(
-		AuthServiceExchangeCliAuthorizationCodeProcedure,
-		svc.ExchangeCliAuthorizationCode,
-		connect.WithSchema(authServiceMethods.ByName("ExchangeCliAuthorizationCode")),
+	authServiceCreateCliAuthorizationHandler := connect.NewUnaryHandler(
+		AuthServiceCreateCliAuthorizationProcedure,
+		svc.CreateCliAuthorization,
+		connect.WithSchema(authServiceMethods.ByName("CreateCliAuthorization")),
+		connect.WithHandlerOptions(opts...),
+	)
+	authServicePollCliAuthorizationHandler := connect.NewUnaryHandler(
+		AuthServicePollCliAuthorizationProcedure,
+		svc.PollCliAuthorization,
+		connect.WithSchema(authServiceMethods.ByName("PollCliAuthorization")),
 		connect.WithHandlerOptions(opts...),
 	)
 	return "/noket.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case AuthServiceExchangeCliAuthorizationCodeProcedure:
-			authServiceExchangeCliAuthorizationCodeHandler.ServeHTTP(w, r)
+		case AuthServiceCreateCliAuthorizationProcedure:
+			authServiceCreateCliAuthorizationHandler.ServeHTTP(w, r)
+		case AuthServicePollCliAuthorizationProcedure:
+			authServicePollCliAuthorizationHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -110,6 +135,10 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
 
-func (UnimplementedAuthServiceHandler) ExchangeCliAuthorizationCode(context.Context, *connect.Request[v1.ExchangeCliAuthorizationCodeRequest]) (*connect.Response[v1.ExchangeCliAuthorizationCodeResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("noket.v1.AuthService.ExchangeCliAuthorizationCode is not implemented"))
+func (UnimplementedAuthServiceHandler) CreateCliAuthorization(context.Context, *connect.Request[v1.CreateCliAuthorizationRequest]) (*connect.Response[v1.CreateCliAuthorizationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("noket.v1.AuthService.CreateCliAuthorization is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) PollCliAuthorization(context.Context, *connect.Request[v1.PollCliAuthorizationRequest]) (*connect.Response[v1.PollCliAuthorizationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("noket.v1.AuthService.PollCliAuthorization is not implemented"))
 }

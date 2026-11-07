@@ -22,87 +22,129 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ExchangeCliAuthorizationCodeRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
-	CodeVerifier  string                 `protobuf:"bytes,2,opt,name=code_verifier,json=codeVerifier,proto3" json:"code_verifier,omitempty"`
-	RedirectUri   string                 `protobuf:"bytes,3,opt,name=redirect_uri,json=redirectUri,proto3" json:"redirect_uri,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
+type CliAuthorizationStatus int32
 
-func (x *ExchangeCliAuthorizationCodeRequest) Reset() {
-	*x = ExchangeCliAuthorizationCodeRequest{}
-	mi := &file_noket_v1_auth_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
+const (
+	CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_UNSPECIFIED CliAuthorizationStatus = 0
+	CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_PENDING     CliAuthorizationStatus = 1
+	CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_APPROVED    CliAuthorizationStatus = 2
+	CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_DENIED      CliAuthorizationStatus = 3
+	CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_EXPIRED     CliAuthorizationStatus = 4
+)
 
-func (x *ExchangeCliAuthorizationCodeRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ExchangeCliAuthorizationCodeRequest) ProtoMessage() {}
-
-func (x *ExchangeCliAuthorizationCodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_noket_v1_auth_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+// Enum value maps for CliAuthorizationStatus.
+var (
+	CliAuthorizationStatus_name = map[int32]string{
+		0: "CLI_AUTHORIZATION_STATUS_UNSPECIFIED",
+		1: "CLI_AUTHORIZATION_STATUS_PENDING",
+		2: "CLI_AUTHORIZATION_STATUS_APPROVED",
+		3: "CLI_AUTHORIZATION_STATUS_DENIED",
+		4: "CLI_AUTHORIZATION_STATUS_EXPIRED",
 	}
-	return mi.MessageOf(x)
+	CliAuthorizationStatus_value = map[string]int32{
+		"CLI_AUTHORIZATION_STATUS_UNSPECIFIED": 0,
+		"CLI_AUTHORIZATION_STATUS_PENDING":     1,
+		"CLI_AUTHORIZATION_STATUS_APPROVED":    2,
+		"CLI_AUTHORIZATION_STATUS_DENIED":      3,
+		"CLI_AUTHORIZATION_STATUS_EXPIRED":     4,
+	}
+)
+
+func (x CliAuthorizationStatus) Enum() *CliAuthorizationStatus {
+	p := new(CliAuthorizationStatus)
+	*p = x
+	return p
 }
 
-// Deprecated: Use ExchangeCliAuthorizationCodeRequest.ProtoReflect.Descriptor instead.
-func (*ExchangeCliAuthorizationCodeRequest) Descriptor() ([]byte, []int) {
+func (x CliAuthorizationStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CliAuthorizationStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_noket_v1_auth_proto_enumTypes[0].Descriptor()
+}
+
+func (CliAuthorizationStatus) Type() protoreflect.EnumType {
+	return &file_noket_v1_auth_proto_enumTypes[0]
+}
+
+func (x CliAuthorizationStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CliAuthorizationStatus.Descriptor instead.
+func (CliAuthorizationStatus) EnumDescriptor() ([]byte, []int) {
 	return file_noket_v1_auth_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ExchangeCliAuthorizationCodeRequest) GetCode() string {
-	if x != nil {
-		return x.Code
-	}
-	return ""
-}
-
-func (x *ExchangeCliAuthorizationCodeRequest) GetCodeVerifier() string {
-	if x != nil {
-		return x.CodeVerifier
-	}
-	return ""
-}
-
-func (x *ExchangeCliAuthorizationCodeRequest) GetRedirectUri() string {
-	if x != nil {
-		return x.RedirectUri
-	}
-	return ""
-}
-
-type ExchangeCliAuthorizationCodeResponse struct {
+type CreateCliAuthorizationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ExchangeCliAuthorizationCodeResponse) Reset() {
-	*x = ExchangeCliAuthorizationCodeResponse{}
+func (x *CreateCliAuthorizationRequest) Reset() {
+	*x = CreateCliAuthorizationRequest{}
+	mi := &file_noket_v1_auth_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateCliAuthorizationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateCliAuthorizationRequest) ProtoMessage() {}
+
+func (x *CreateCliAuthorizationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_noket_v1_auth_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateCliAuthorizationRequest.ProtoReflect.Descriptor instead.
+func (*CreateCliAuthorizationRequest) Descriptor() ([]byte, []int) {
+	return file_noket_v1_auth_proto_rawDescGZIP(), []int{0}
+}
+
+type CreateCliAuthorizationResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Unguessable id the browser approves; it travels in the login URL.
+	AuthorizationId string `protobuf:"bytes,1,opt,name=authorization_id,json=authorizationId,proto3" json:"authorization_id,omitempty"`
+	// Unguessable secret the CLI polls with; it never reaches the browser.
+	AuthorizationSecret string `protobuf:"bytes,2,opt,name=authorization_secret,json=authorizationSecret,proto3" json:"authorization_secret,omitempty"`
+	// Seconds the session stays pollable.
+	ExpiresIn int32 `protobuf:"varint,3,opt,name=expires_in,json=expiresIn,proto3" json:"expires_in,omitempty"`
+	// Seconds the CLI should wait between polls.
+	Interval int32 `protobuf:"varint,4,opt,name=interval,proto3" json:"interval,omitempty"`
+	// Complete login address the CLI opens in the browser, built from the web
+	// app's configured base URL so the CLI never has to know where the web app
+	// lives. It carries the authorization id, never the secret.
+	AuthorizationUrl string `protobuf:"bytes,5,opt,name=authorization_url,json=authorizationUrl,proto3" json:"authorization_url,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CreateCliAuthorizationResponse) Reset() {
+	*x = CreateCliAuthorizationResponse{}
 	mi := &file_noket_v1_auth_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ExchangeCliAuthorizationCodeResponse) String() string {
+func (x *CreateCliAuthorizationResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ExchangeCliAuthorizationCodeResponse) ProtoMessage() {}
+func (*CreateCliAuthorizationResponse) ProtoMessage() {}
 
-func (x *ExchangeCliAuthorizationCodeResponse) ProtoReflect() protoreflect.Message {
+func (x *CreateCliAuthorizationResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_noket_v1_auth_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -114,12 +156,146 @@ func (x *ExchangeCliAuthorizationCodeResponse) ProtoReflect() protoreflect.Messa
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ExchangeCliAuthorizationCodeResponse.ProtoReflect.Descriptor instead.
-func (*ExchangeCliAuthorizationCodeResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreateCliAuthorizationResponse.ProtoReflect.Descriptor instead.
+func (*CreateCliAuthorizationResponse) Descriptor() ([]byte, []int) {
 	return file_noket_v1_auth_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ExchangeCliAuthorizationCodeResponse) GetToken() string {
+func (x *CreateCliAuthorizationResponse) GetAuthorizationId() string {
+	if x != nil {
+		return x.AuthorizationId
+	}
+	return ""
+}
+
+func (x *CreateCliAuthorizationResponse) GetAuthorizationSecret() string {
+	if x != nil {
+		return x.AuthorizationSecret
+	}
+	return ""
+}
+
+func (x *CreateCliAuthorizationResponse) GetExpiresIn() int32 {
+	if x != nil {
+		return x.ExpiresIn
+	}
+	return 0
+}
+
+func (x *CreateCliAuthorizationResponse) GetInterval() int32 {
+	if x != nil {
+		return x.Interval
+	}
+	return 0
+}
+
+func (x *CreateCliAuthorizationResponse) GetAuthorizationUrl() string {
+	if x != nil {
+		return x.AuthorizationUrl
+	}
+	return ""
+}
+
+type PollCliAuthorizationRequest struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	AuthorizationId     string                 `protobuf:"bytes,1,opt,name=authorization_id,json=authorizationId,proto3" json:"authorization_id,omitempty"`
+	AuthorizationSecret string                 `protobuf:"bytes,2,opt,name=authorization_secret,json=authorizationSecret,proto3" json:"authorization_secret,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *PollCliAuthorizationRequest) Reset() {
+	*x = PollCliAuthorizationRequest{}
+	mi := &file_noket_v1_auth_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PollCliAuthorizationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PollCliAuthorizationRequest) ProtoMessage() {}
+
+func (x *PollCliAuthorizationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_noket_v1_auth_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PollCliAuthorizationRequest.ProtoReflect.Descriptor instead.
+func (*PollCliAuthorizationRequest) Descriptor() ([]byte, []int) {
+	return file_noket_v1_auth_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *PollCliAuthorizationRequest) GetAuthorizationId() string {
+	if x != nil {
+		return x.AuthorizationId
+	}
+	return ""
+}
+
+func (x *PollCliAuthorizationRequest) GetAuthorizationSecret() string {
+	if x != nil {
+		return x.AuthorizationSecret
+	}
+	return ""
+}
+
+type PollCliAuthorizationResponse struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Status CliAuthorizationStatus `protobuf:"varint,1,opt,name=status,proto3,enum=noket.v1.CliAuthorizationStatus" json:"status,omitempty"`
+	// Set only when status is CLI_AUTHORIZATION_STATUS_APPROVED. The session is
+	// consumed by the first poll that observes the approval.
+	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PollCliAuthorizationResponse) Reset() {
+	*x = PollCliAuthorizationResponse{}
+	mi := &file_noket_v1_auth_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PollCliAuthorizationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PollCliAuthorizationResponse) ProtoMessage() {}
+
+func (x *PollCliAuthorizationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_noket_v1_auth_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PollCliAuthorizationResponse.ProtoReflect.Descriptor instead.
+func (*PollCliAuthorizationResponse) Descriptor() ([]byte, []int) {
+	return file_noket_v1_auth_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *PollCliAuthorizationResponse) GetStatus() CliAuthorizationStatus {
+	if x != nil {
+		return x.Status
+	}
+	return CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_UNSPECIFIED
+}
+
+func (x *PollCliAuthorizationResponse) GetToken() string {
 	if x != nil {
 		return x.Token
 	}
@@ -130,16 +306,30 @@ var File_noket_v1_auth_proto protoreflect.FileDescriptor
 
 const file_noket_v1_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x13noket/v1/auth.proto\x12\bnoket.v1\x1a\x1bbuf/validate/validate.proto\"\xcb\x01\n" +
-	"#ExchangeCliAuthorizationCodeRequest\x12.\n" +
-	"\x04code\x18\x01 \x01(\tB\x1a\xbaH\x17r\x152\x13^[A-Za-z0-9_-]{43}$R\x04code\x12E\n" +
-	"\rcode_verifier\x18\x02 \x01(\tB \xbaH\x1dr\x1b2\x19^[A-Za-z0-9._~-]{43,128}$R\fcodeVerifier\x12-\n" +
-	"\fredirect_uri\x18\x03 \x01(\tB\n" +
-	"\xbaH\ar\x05\x10\x01\x18\x80\x10R\vredirectUri\"<\n" +
-	"$ExchangeCliAuthorizationCodeResponse\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token2\x8e\x01\n" +
-	"\vAuthService\x12\x7f\n" +
-	"\x1cExchangeCliAuthorizationCode\x12-.noket.v1.ExchangeCliAuthorizationCodeRequest\x1a..noket.v1.ExchangeCliAuthorizationCodeResponse\"\x00B1Z/github.com/noket-dev/noket/gen/noket/v1;noketv1b\x06proto3"
+	"\x13noket/v1/auth.proto\x12\bnoket.v1\x1a\x1bbuf/validate/validate.proto\"\x1f\n" +
+	"\x1dCreateCliAuthorizationRequest\"\xe6\x01\n" +
+	"\x1eCreateCliAuthorizationResponse\x12)\n" +
+	"\x10authorization_id\x18\x01 \x01(\tR\x0fauthorizationId\x121\n" +
+	"\x14authorization_secret\x18\x02 \x01(\tR\x13authorizationSecret\x12\x1d\n" +
+	"\n" +
+	"expires_in\x18\x03 \x01(\x05R\texpiresIn\x12\x1a\n" +
+	"\binterval\x18\x04 \x01(\x05R\binterval\x12+\n" +
+	"\x11authorization_url\x18\x05 \x01(\tR\x10authorizationUrl\"\xb3\x01\n" +
+	"\x1bPollCliAuthorizationRequest\x12E\n" +
+	"\x10authorization_id\x18\x01 \x01(\tB\x1a\xbaH\x17r\x152\x13^[A-Za-z0-9_-]{43}$R\x0fauthorizationId\x12M\n" +
+	"\x14authorization_secret\x18\x02 \x01(\tB\x1a\xbaH\x17r\x152\x13^[A-Za-z0-9_-]{43}$R\x13authorizationSecret\"n\n" +
+	"\x1cPollCliAuthorizationResponse\x128\n" +
+	"\x06status\x18\x01 \x01(\x0e2 .noket.v1.CliAuthorizationStatusR\x06status\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token*\xda\x01\n" +
+	"\x16CliAuthorizationStatus\x12(\n" +
+	"$CLI_AUTHORIZATION_STATUS_UNSPECIFIED\x10\x00\x12$\n" +
+	" CLI_AUTHORIZATION_STATUS_PENDING\x10\x01\x12%\n" +
+	"!CLI_AUTHORIZATION_STATUS_APPROVED\x10\x02\x12#\n" +
+	"\x1fCLI_AUTHORIZATION_STATUS_DENIED\x10\x03\x12$\n" +
+	" CLI_AUTHORIZATION_STATUS_EXPIRED\x10\x042\xe5\x01\n" +
+	"\vAuthService\x12m\n" +
+	"\x16CreateCliAuthorization\x12'.noket.v1.CreateCliAuthorizationRequest\x1a(.noket.v1.CreateCliAuthorizationResponse\"\x00\x12g\n" +
+	"\x14PollCliAuthorization\x12%.noket.v1.PollCliAuthorizationRequest\x1a&.noket.v1.PollCliAuthorizationResponse\"\x00B1Z/github.com/noket-dev/noket/gen/noket/v1;noketv1b\x06proto3"
 
 var (
 	file_noket_v1_auth_proto_rawDescOnce sync.Once
@@ -153,19 +343,26 @@ func file_noket_v1_auth_proto_rawDescGZIP() []byte {
 	return file_noket_v1_auth_proto_rawDescData
 }
 
-var file_noket_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_noket_v1_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_noket_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_noket_v1_auth_proto_goTypes = []any{
-	(*ExchangeCliAuthorizationCodeRequest)(nil),  // 0: noket.v1.ExchangeCliAuthorizationCodeRequest
-	(*ExchangeCliAuthorizationCodeResponse)(nil), // 1: noket.v1.ExchangeCliAuthorizationCodeResponse
+	(CliAuthorizationStatus)(0),            // 0: noket.v1.CliAuthorizationStatus
+	(*CreateCliAuthorizationRequest)(nil),  // 1: noket.v1.CreateCliAuthorizationRequest
+	(*CreateCliAuthorizationResponse)(nil), // 2: noket.v1.CreateCliAuthorizationResponse
+	(*PollCliAuthorizationRequest)(nil),    // 3: noket.v1.PollCliAuthorizationRequest
+	(*PollCliAuthorizationResponse)(nil),   // 4: noket.v1.PollCliAuthorizationResponse
 }
 var file_noket_v1_auth_proto_depIdxs = []int32{
-	0, // 0: noket.v1.AuthService.ExchangeCliAuthorizationCode:input_type -> noket.v1.ExchangeCliAuthorizationCodeRequest
-	1, // 1: noket.v1.AuthService.ExchangeCliAuthorizationCode:output_type -> noket.v1.ExchangeCliAuthorizationCodeResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: noket.v1.PollCliAuthorizationResponse.status:type_name -> noket.v1.CliAuthorizationStatus
+	1, // 1: noket.v1.AuthService.CreateCliAuthorization:input_type -> noket.v1.CreateCliAuthorizationRequest
+	3, // 2: noket.v1.AuthService.PollCliAuthorization:input_type -> noket.v1.PollCliAuthorizationRequest
+	2, // 3: noket.v1.AuthService.CreateCliAuthorization:output_type -> noket.v1.CreateCliAuthorizationResponse
+	4, // 4: noket.v1.AuthService.PollCliAuthorization:output_type -> noket.v1.PollCliAuthorizationResponse
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_noket_v1_auth_proto_init() }
@@ -178,13 +375,14 @@ func file_noket_v1_auth_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_noket_v1_auth_proto_rawDesc), len(file_noket_v1_auth_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   2,
+			NumEnums:      1,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_noket_v1_auth_proto_goTypes,
 		DependencyIndexes: file_noket_v1_auth_proto_depIdxs,
+		EnumInfos:         file_noket_v1_auth_proto_enumTypes,
 		MessageInfos:      file_noket_v1_auth_proto_msgTypes,
 	}.Build()
 	File_noket_v1_auth_proto = out.File

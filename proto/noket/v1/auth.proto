@@ -6,27 +6,54 @@ import "buf/validate/validate.proto";
 
 option go_package = "github.com/noket-dev/noket/gen/noket/v1;noketv1";
 
-// The CLI-side subset of the control plane's AuthService: the CLI only redeems
-// the one-time code the browser mints. The service and message names, field
-// numbers and validation rules must stay identical to noket-api's auth.proto so
-// the wire contract matches.
+// The CLI-side subset of the control plane's AuthService: the CLI opens a
+// polling session, the browser approves it, and the poll that observes the
+// approval receives the JWT. The service and message names, field numbers and
+// validation rules must stay identical to noket-api's auth.proto so the wire
+// contract matches.
 service AuthService {
-  // Browser-assisted login for the noket CLI. The console page mints a
-  // one-time code from an authenticated session; the CLI redeems it for the
-  // same JWT a browser login would issue.
-  rpc ExchangeCliAuthorizationCode(ExchangeCliAuthorizationCodeRequest)
-      returns (ExchangeCliAuthorizationCodeResponse) {}
+  // Unauthenticated: the CLI has no token yet, which is the point of the flow.
+  // The secret stays in the CLI; the browser only ever sees the id.
+  rpc CreateCliAuthorization(CreateCliAuthorizationRequest)
+      returns (CreateCliAuthorizationResponse) {}
+  // Unauthenticated as well: the secret carried here stands in for the token.
+  rpc PollCliAuthorization(PollCliAuthorizationRequest)
+      returns (PollCliAuthorizationResponse) {}
 }
 
-message ExchangeCliAuthorizationCodeRequest {
-  string code = 1 [(buf.validate.field).string.pattern = "^[A-Za-z0-9_-]{43}$"];
-  string code_verifier = 2 [(buf.validate.field).string.pattern = "^[A-Za-z0-9._~-]{43,128}$"];
-  string redirect_uri = 3 [
-    (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 2048
-  ];
+enum CliAuthorizationStatus {
+  CLI_AUTHORIZATION_STATUS_UNSPECIFIED = 0;
+  CLI_AUTHORIZATION_STATUS_PENDING = 1;
+  CLI_AUTHORIZATION_STATUS_APPROVED = 2;
+  CLI_AUTHORIZATION_STATUS_DENIED = 3;
+  CLI_AUTHORIZATION_STATUS_EXPIRED = 4;
 }
 
-message ExchangeCliAuthorizationCodeResponse {
-  string token = 1;
+message CreateCliAuthorizationRequest {}
+
+message CreateCliAuthorizationResponse {
+  // Unguessable id the browser approves; it travels in the login URL.
+  string authorization_id = 1;
+  // Unguessable secret the CLI polls with; it never reaches the browser.
+  string authorization_secret = 2;
+  // Seconds the session stays pollable.
+  int32 expires_in = 3;
+  // Seconds the CLI should wait between polls.
+  int32 interval = 4;
+  // Complete login address the CLI opens in the browser, built from the web
+  // app's configured base URL so the CLI never has to know where the web app
+  // lives. It carries the authorization id, never the secret.
+  string authorization_url = 5;
+}
+
+message PollCliAuthorizationRequest {
+  string authorization_id = 1 [(buf.validate.field).string.pattern = "^[A-Za-z0-9_-]{43}$"];
+  string authorization_secret = 2 [(buf.validate.field).string.pattern = "^[A-Za-z0-9_-]{43}$"];
+}
+
+message PollCliAuthorizationResponse {
+  CliAuthorizationStatus status = 1;
+  // Set only when status is CLI_AUTHORIZATION_STATUS_APPROVED. The session is
+  // consumed by the first poll that observes the approval.
+  string token = 2;
 }

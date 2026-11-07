@@ -2,16 +2,10 @@ package cli
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"net/url"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -27,12 +21,12 @@ import (
 	"github.com/noket-dev/noket/internal/types"
 )
 
-const loginTimeout = 2 * time.Minute
-
-type callbackResult struct {
-	code string
-	err  error
-}
+// The server normally reports both values; these apply only if it does not.
+const (
+	defaultLoginTimeout = 10 * time.Minute
+	defaultPollInterval = 2 * time.Second
+	pollRequestTimeout  = 15 * time.Second
+)
 
 func newLoginCmd() *cobra.Command {
 	return &cobra.Command{
@@ -43,6 +37,17 @@ func newLoginCmd() *cobra.Command {
 			return runLogin(cmd)
 		},
 	}
+}
+
+// loginSession is the polling session the server opened for this login. Only
+// the CLI holds the secret; the browser approves the id.
+type loginSession struct {
+	client       noketv1connect.AuthServiceClient
+	id           string
+	secret       string
+	authorizeURL string
+	interval     time.Duration
+	expiresIn    time.Duration
 }
 
 func runLogin(cmd *cobra.Command) (err error) {
@@ -61,58 +66,27 @@ func runLogin(cmd *cobra.Command) (err error) {
 	}
 
 	apiBase := strings.TrimRight(cfg.API.BaseURL, "/")
-	webBase := strings.TrimRight(cfg.Web.BaseURL, "/")
 
-	verifier, err := randomURLToken(32)
-	if err != nil {
-		return err
-	}
-	sum := sha256.Sum256([]byte(verifier))
-	challenge := base64.RawURLEncoding.EncodeToString(sum[:])
-	state, err := randomHex(16)
+	session, err := createLoginSession(cmd.Context(), apiBase)
 	if err != nil {
 		return err
 	}
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return fmt.Errorf("start local callback server: %w", err)
-	}
-	defer func() { _ = listener.Close() }()
-
-	redirectURI := "http://" + listener.Addr().String() + "/callback"
-	resultCh := make(chan callbackResult, 1)
-
-	mux := http.NewServeMux()
-	mux.Handle("/callback", &callbackHandler{state: state, result: resultCh})
-	server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
-	go func() { _ = server.Serve(listener) }()
-	defer func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
-		_ = server.Shutdown(ctx)
-	}()
-
-	authorize := webBase + "/cli/login?" + url.Values{
-		"redirect_uri":          {redirectURI},
-		"state":                 {state},
-		"code_challenge":        {challenge},
-		"code_challenge_method": {"S256"},
-	}.Encode()
-
-	fmt.Fprintf(out, "Open this URL in your browser to log in:\n  %s\n\n", authorize)
-	if !openBrowser(authorize) {
+	// The URL comes from the server, which knows where its web app lives; it is
+	// the only thing the browser needs, and the secret stays here.
+	fmt.Fprintf(out, "Open this URL in your browser to log in:\n  %s\n\n", session.authorizeURL)
+	if !openBrowser(session.authorizeURL) {
 		fmt.Fprintln(out, "Could not open the browser automatically; copy the URL above.")
 	}
-	ctx, cancel := context.WithTimeout(cmd.Context(), loginTimeout)
+
+	ctx, cancel := context.WithTimeout(cmd.Context(), session.expiresIn)
 	defer cancel()
 
-	progress := startProgress(cmd.ErrOrStderr(), "Logging in",
-		"Waiting for the browser callback", "Exchanging the authorization code")
+	progress := startProgress(cmd.ErrOrStderr(), "Logging in", "Waiting for the browser approval")
 	defer func() { progress.Stop(err) }()
 
 	if progress.enabled() {
-		deadline := time.Now().Add(loginTimeout)
+		deadline := time.Now().Add(session.expiresIn)
 		tick := make(chan struct{})
 		defer close(tick)
 		go func() {
@@ -132,21 +106,10 @@ func runLogin(cmd *cobra.Command) (err error) {
 			}
 		}()
 	} else {
-		fmt.Fprintln(out, "Waiting for the login callback...")
+		fmt.Fprintln(out, "Waiting for the browser to approve the login...")
 	}
 
-	var result callbackResult
-	select {
-	case result = <-resultCh:
-	case <-ctx.Done():
-		return fmt.Errorf("login timed out after %s", loginTimeout)
-	}
-	if result.err != nil {
-		return result.err
-	}
-	progress.Advance()
-
-	token, err := exchangeCode(ctx, apiBase, result.code, verifier, redirectURI)
+	token, err := session.wait(ctx)
 	if err != nil {
 		return err
 	}
@@ -168,6 +131,98 @@ func runLogin(cmd *cobra.Command) (err error) {
 	}
 	fmt.Fprintf(out, "Credentials saved to %s (readable only by the current user).\n", path)
 	return nil
+}
+
+// createLoginSession asks the API for a pollable session and the timings the
+// CLI should follow while it waits for the browser.
+func createLoginSession(ctx context.Context, apiBase string) (*loginSession, error) {
+	client := noketv1connect.NewAuthServiceClient(&http.Client{Timeout: pollRequestTimeout}, apiBase)
+	response, err := client.CreateCliAuthorization(ctx, connect.NewRequest(&noketv1.CreateCliAuthorizationRequest{}))
+	if err != nil {
+		return nil, fmt.Errorf("create login session: %w", err)
+	}
+
+	msg := response.Msg
+	if msg.GetAuthorizationId() == "" || msg.GetAuthorizationSecret() == "" {
+		return nil, errors.New("login response is missing the authorization id or secret")
+	}
+	if msg.GetAuthorizationUrl() == "" {
+		return nil, errors.New("login response is missing the authorization URL")
+	}
+
+	session := &loginSession{
+		client:       client,
+		id:           msg.GetAuthorizationId(),
+		secret:       msg.GetAuthorizationSecret(),
+		authorizeURL: msg.GetAuthorizationUrl(),
+		interval:     defaultPollInterval,
+		expiresIn:    defaultLoginTimeout,
+	}
+	if msg.GetInterval() > 0 {
+		session.interval = time.Duration(msg.GetInterval()) * time.Second
+	}
+	if msg.GetExpiresIn() > 0 {
+		session.expiresIn = time.Duration(msg.GetExpiresIn()) * time.Second
+	}
+	return session, nil
+}
+
+// wait polls until the browser decides, the session expires, or ctx ends.
+func (s *loginSession) wait(ctx context.Context) (string, error) {
+	ticker := time.NewTicker(s.interval)
+	defer ticker.Stop()
+
+	for {
+		status, token, err := s.poll(ctx)
+		if err != nil {
+			// The poll itself fails when ctx ends mid-request; report the wait
+			// ending rather than a transport error.
+			if ctx.Err() != nil {
+				return "", loginWaitError(ctx, s.expiresIn)
+			}
+			return "", err
+		}
+
+		switch status {
+		case noketv1.CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_APPROVED:
+			if token == "" {
+				return "", errors.New("login response has no token")
+			}
+			return token, nil
+		case noketv1.CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_DENIED:
+			return "", errors.New("login was denied in the browser")
+		case noketv1.CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_EXPIRED:
+			return "", errors.New("the login session expired; run `noket login` again")
+		case noketv1.CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_PENDING:
+			select {
+			case <-ctx.Done():
+				return "", loginWaitError(ctx, s.expiresIn)
+			case <-ticker.C:
+			}
+		default:
+			return "", fmt.Errorf("unexpected login status %v", status)
+		}
+	}
+}
+
+func (s *loginSession) poll(ctx context.Context) (noketv1.CliAuthorizationStatus, string, error) {
+	response, err := s.client.PollCliAuthorization(ctx, connect.NewRequest(&noketv1.PollCliAuthorizationRequest{
+		AuthorizationId:     s.id,
+		AuthorizationSecret: s.secret,
+	}))
+	if err != nil {
+		return noketv1.CliAuthorizationStatus_CLI_AUTHORIZATION_STATUS_UNSPECIFIED, "", fmt.Errorf("poll login session: %w", err)
+	}
+	return response.Msg.GetStatus(), response.Msg.GetToken(), nil
+}
+
+// loginWaitError distinguishes the session timing out from the user pressing
+// Ctrl-C, which also ends ctx.
+func loginWaitError(ctx context.Context, timeout time.Duration) error {
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return fmt.Errorf("login timed out after %s", timeout)
+	}
+	return ctx.Err()
 }
 
 // reportExistingLogin tells the user a session is already saved before running
@@ -202,95 +257,6 @@ func reportExistingLogin(out io.Writer) {
 	fmt.Fprintln(out)
 }
 
-type callbackHandler struct {
-	state  string
-	result chan<- callbackResult
-}
-
-func (h *callbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	query := r.URL.Query()
-	if query.Get("state") != h.state {
-		// A stray or forged callback must not end the real login attempt.
-		http.Error(w, "state mismatch", http.StatusBadRequest)
-		return
-	}
-
-	if message := query.Get("error"); message != "" {
-		deliver(h.result, callbackResult{err: fmt.Errorf("login rejected: %s", message)})
-		writeCallbackPage(w, false)
-		return
-	}
-	code := query.Get("code")
-	if code == "" {
-		deliver(h.result, callbackResult{err: errors.New("login callback is missing code")})
-		writeCallbackPage(w, false)
-		return
-	}
-
-	deliver(h.result, callbackResult{code: code})
-	writeCallbackPage(w, true)
-}
-
-func deliver(ch chan<- callbackResult, result callbackResult) {
-	select {
-	case ch <- result:
-	default:
-	}
-}
-
-func writeCallbackPage(w http.ResponseWriter, ok bool) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	message := "Login complete. You can close this page and return to the terminal."
-	status := http.StatusOK
-	if !ok {
-		message = "Login failed. Return to the terminal for details."
-		status = http.StatusBadRequest
-	}
-	w.WriteHeader(status)
-	_, _ = io.WriteString(w, "<!doctype html><meta charset=\"utf-8\"><title>noket</title>"+
-		"<body style=\"font:16px system-ui;padding:3rem;text-align:center\">"+
-		"<p>"+message+"</p></body>")
-}
-
-func exchangeCode(ctx context.Context, apiBase, code, verifier, redirectURI string) (string, error) {
-	client := noketv1connect.NewAuthServiceClient(&http.Client{Timeout: 15 * time.Second}, apiBase)
-	response, err := client.ExchangeCliAuthorizationCode(ctx, connect.NewRequest(&noketv1.ExchangeCliAuthorizationCodeRequest{
-		Code:         code,
-		CodeVerifier: verifier,
-		RedirectUri:  redirectURI,
-	}))
-	if err != nil {
-		return "", fmt.Errorf("exchange login credentials: %w", err)
-	}
-
-	token := response.Msg.GetToken()
-	if token == "" {
-		return "", errors.New("login response has no token")
-	}
-	return token, nil
-}
-
-func randomURLToken(size int) (string, error) {
-	buf := make([]byte, size)
-	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("generate PKCE verifier: %w", err)
-	}
-	return base64.RawURLEncoding.EncodeToString(buf), nil
-}
-
-func randomHex(size int) (string, error) {
-	buf := make([]byte, size)
-	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("generate login state: %w", err)
-	}
-	return hex.EncodeToString(buf), nil
-}
-
 func openBrowser(target string) bool {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
@@ -312,7 +278,7 @@ func newLogoutCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if pid, running := noketd.Running(); running {
 				if _, managed := noketd.RunningPID(); managed {
-					return fmt.Errorf("noketd is running (pid %d); run noket down first", pid)
+					return fmt.Errorf("noketd is running (pid %d); run `noket down first", pid)
 				}
 				return fmt.Errorf("noketd is running in the foreground (pid %d); stop that process first", pid)
 			}

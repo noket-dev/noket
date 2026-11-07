@@ -14,7 +14,6 @@ const (
 // upstream list; the server never keeps a copy.
 type Config struct {
 	API       APIConfig    `toml:"api"`
-	Web       WebConfig    `toml:"web"`
 	Tunnel    Tunnel       `toml:"tunnel"`
 	Noketd    NoketdConfig `toml:"noketd"`
 	Upstreams []Upstream   `toml:"upstreams"`
@@ -24,13 +23,6 @@ type Config struct {
 // exchange the authorization code for a token. The tunnel WebSocket URL is
 // configured separately because it usually lives on another host.
 type APIConfig struct {
-	BaseURL string `toml:"base_url"`
-}
-
-// WebConfig points at the browser-facing web app that serves the login
-// authorization page. It defaults to the production web host, independently of
-// a custom API base.
-type WebConfig struct {
 	BaseURL string `toml:"base_url"`
 }
 

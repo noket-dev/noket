@@ -9,10 +9,6 @@
 [api]
 base_url = 'https://api.noket.dev'
 
-[web]
-# Browser-facing app that serves the /cli/login authorization page.
-base_url = 'https://noket.dev'
-
 [tunnel]
 url = 'wss://tunnel.noket.dev/ws'
 # Node display name; empty uses the hostname. Display only; nodeId is unchanged.
