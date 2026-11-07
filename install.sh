@@ -19,8 +19,8 @@ REPO="noket-dev/noket"
 REF="${NOKET_INSTALL_REF:-main}"
 SERVICE_LABEL="dev.noket.agent"
 SERVICE_UNIT="noket.service"
-MARKER_BEGIN="# >>> noket >>>"
-MARKER_END="# <<< noket <<<"
+MARKER_BEGIN="# noket"
+MARKER_END="# noket end"
 
 VERSION="${NOKET_VERSION:-}"
 PREFIX="${NOKET_INSTALL_DIR:-}"
@@ -37,6 +37,7 @@ ARCHIVE_VERSION=""
 WORKDIR=""
 RC_FILE=""
 PATH_CHANGED=0
+PATH_HINT=""
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
 	BOLD=$'\033[1m'
@@ -361,7 +362,10 @@ ensure_path() {
 		local fish_dir="$HOME/.config/fish/conf.d"
 		mkdir -p "$fish_dir"
 		printf 'fish_add_path %s\n' "$(fish_quote "$DEST")" >"$fish_dir/noket.fish"
-		note "Added $DEST to PATH in $fish_dir/noket.fish"
+		RC_FILE="$fish_dir/noket.fish"
+		PATH_HINT="fish_add_path $(fish_quote "$DEST")"
+		PATH_CHANGED=1
+		note "Added $DEST to PATH in $RC_FILE"
 		return 0
 	fi
 
@@ -387,7 +391,19 @@ ensure_path() {
 	} >>"$RC_FILE"
 
 	PATH_CHANGED=1
+	PATH_HINT="export PATH=\"$DEST:\$PATH\""
 	note "Added $DEST to PATH in $RC_FILE"
+}
+
+# A later install directory does not win over an earlier one on PATH, so a
+# second copy of noket can keep running after an upgrade.
+check_shadowing() {
+	local found dir
+	found=$(command -v noket 2>/dev/null) || return 0
+	dir=$(cd "$(dirname "$found")" 2>/dev/null && pwd) || return 0
+	[ "$dir" = "$DEST" ] && return 0
+	warn "an older noket runs first: $found"
+	warn "remove it, or put $DEST before $dir on PATH"
 }
 
 maybe_login() {
@@ -690,17 +706,24 @@ handoff_windows() {
 }
 
 finish() {
+	check_shadowing
+
 	say ""
 	step "${BOLD}noket $TAG${RESET} installed to $DEST"
 	say ""
+
+	if [ "$PATH_CHANGED" = 1 ] && [ -n "$PATH_HINT" ]; then
+		say "To use noket in this shell now, run one of:"
+		say ""
+		say "  $PATH_HINT"
+		say ""
+		say "Open a new terminal to pick it up automatically, or run: source $RC_FILE"
+		say ""
+	fi
+
 	say "  noket login    sign in (if you have not already)"
 	say "  noket status   check the tunnel"
 	say "  noket tui      manage upstreams"
-
-	if [ "$PATH_CHANGED" = 1 ] && [ -n "$RC_FILE" ]; then
-		say ""
-		say "Open a new terminal, or run: source $RC_FILE"
-	fi
 
 	if [ "$DO_AUTOSTART" = 1 ]; then
 		say ""
