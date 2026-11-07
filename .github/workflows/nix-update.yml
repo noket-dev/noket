@@ -30,7 +30,8 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v15
 
       # A toolchain bump can change generated code, so regenerate and verify
-      # here: pull requests opened with GITHUB_TOKEN do not trigger CI.
+      # here. The pull request is opened with PR_TOKEN because commits pushed
+      # with GITHUB_TOKEN do not trigger CI.
       - name: Update and verify
         run: |
           nix flake update
@@ -46,10 +47,6 @@ jobs:
           title: 'chore(deps): update flake.lock'
           body: |
             Weekly `nix flake update`, with `gen/` regenerated and `make check` passing.
-
-            CI does not run on pull requests opened with `GITHUB_TOKEN`; add a
-            `PR_TOKEN` repository secret with `contents: write` and
-            `pull-requests: write` to have the workflow use it instead.
           branch: chore/flake-update
           delete-branch: true
           token: ${{ secrets.PR_TOKEN || secrets.GITHUB_TOKEN }}

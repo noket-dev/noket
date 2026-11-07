@@ -1,0 +1,93 @@
+name: Refresh vendor hash
+
+# Dependabot bumps go.mod without touching flake.nix, so vendorHash goes
+# stale and Check (Nix) fails. A pull_request run started by Dependabot reads no
+# repository secrets, so this uses pull_request_target, which runs from the base
+# branch and can push the fix with PR_TOKEN. pull_request_target only fires for
+# workflows that exist on the default branch.
+on:
+  pull_request_target:
+    paths:
+      - go.mod
+      - go.sum
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vendor-hash-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    # Both the base branch's flake and the push token are in reach here, so
+    # only Dependabot's own branch in this repository may run the job.
+    if: >-
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'dependabot/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the base branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v23
+
+      - name: Enable the Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v15
+
+      # Takes only the dependency manifests from the pull request, so the flake
+      # that gets evaluated and built is still the base branch's: nothing from
+      # the pull request runs anywhere near a token.
+      - name: Compute the hash
+        id: hash
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$HEAD_REF"
+          git checkout FETCH_HEAD -- go.mod go.sum
+
+          sed -i 's|vendorHash = "[^"]*";|vendorHash = pkgs.lib.fakeHash;|' flake.nix
+          got=$(nix build .#noket --no-link 2>&1 | sed -n 's/^ *got: *//p' | head -n 1 || true)
+          if [ -z "$got" ]; then
+            echo "::error::nix build failed without reporting a hash mismatch"
+            exit 1
+          fi
+
+          sed -i "s|vendorHash = pkgs.lib.fakeHash;|vendorHash = \"$got\";|" flake.nix
+          nix build .#noket --no-link --print-out-paths
+          echo "hash=$got" >> "$GITHUB_OUTPUT"
+
+      # The hash is settled by now, so checking out the pull request here is
+      # safe: only git and sed run from this point on.
+      - name: Check out the pull request
+        if: steps.hash.outputs.hash != ''
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.PR_TOKEN }}
+
+      # A push made with PR_TOKEN triggers CI; one made with GITHUB_TOKEN would not.
+      - name: Push the fix
+        if: steps.hash.outputs.hash != ''
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          HASH: ${{ steps.hash.outputs.hash }}
+        run: |
+          set -euo pipefail
+          sed -i "s|vendorHash = \"[^\"]*\";|vendorHash = \"$HASH\";|" flake.nix
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add flake.nix
+          if git diff --cached --quiet; then
+            echo "flake.nix already carries the right hash"
+            exit 0
+          fi
+          git commit -m 'chore(deps): refresh vendorHash'
+          git push origin "HEAD:refs/heads/$BRANCH"
