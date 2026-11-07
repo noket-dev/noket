@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +27,23 @@ func sampleConfig() *types.Config {
 	return cfg
 }
 
+// requirePrivateFile checks that path is readable only by its owner. Windows
+// only tracks the read-only bit and reports 0666 for every new file, so the
+// mode is only meaningful on Unix.
+func requirePrivateFile(t *testing.T, path string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		return
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o600 {
+		t.Fatalf("%s permission = %o, want 600", filepath.Base(path), perm)
+	}
+}
+
 func TestEnsureNodePersists(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv(config.DirEnv, dir)
@@ -42,13 +60,7 @@ func TestEnsureNodePersists(t *testing.T) {
 		t.Fatalf("node id not stable: %+v then %+v", first, second)
 	}
 
-	info, err := os.Stat(filepath.Join(dir, "node.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if perm := info.Mode().Perm(); perm != 0o600 {
-		t.Fatalf("node.json permission = %o, want 600", perm)
-	}
+	requirePrivateFile(t, filepath.Join(dir, "node.json"))
 }
 
 func TestEnsureNodeSeparatesAccounts(t *testing.T) {
@@ -141,14 +153,7 @@ func TestCredentialsRoundTripAndPermissions(t *testing.T) {
 		t.Fatalf("unexpected credentials: %+v", loaded)
 	}
 
-	path := filepath.Join(dir, "credentials.json")
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if perm := info.Mode().Perm(); perm != 0o600 {
-		t.Fatalf("credentials permission = %o, want 600", perm)
-	}
+	requirePrivateFile(t, filepath.Join(dir, "credentials.json"))
 
 	if err := config.DeleteCredentials(); err != nil {
 		t.Fatal(err)
@@ -165,13 +170,7 @@ func TestSaveConfigPermissions(t *testing.T) {
 	if err := config.Save(sampleConfig()); err != nil {
 		t.Fatal(err)
 	}
-	info, err := os.Stat(filepath.Join(dir, "config.toml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if perm := info.Mode().Perm(); perm != 0o600 {
-		t.Fatalf("config.toml permission = %o, want 600", perm)
-	}
+	requirePrivateFile(t, filepath.Join(dir, "config.toml"))
 }
 
 func TestConfigTOMLRoundTrip(t *testing.T) {
