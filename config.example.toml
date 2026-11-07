@@ -1,0 +1,38 @@
+# Example local configuration for noketd.
+#
+# Path: ~/.noket/config.toml (Windows: %USERPROFILE%\.noket\config.toml).
+# Containers and tests can override the directory with NOKET_CONFIG_DIR.
+#
+# Usually maintained by `noket upstream add/edit/remove`; editing by hand is optional.
+# noketd reloads this file on the next heartbeat; a parse failure keeps the old config.
+
+[api]
+base_url = 'https://api.noket.dev'
+
+[web]
+# Browser-facing app that serves the /cli/login authorization page.
+base_url = 'https://noket.dev'
+
+[tunnel]
+url = 'wss://tunnel.noket.dev/ws'
+# Node display name; empty uses the hostname. Display only; nodeId is unchanged.
+name = 'mac-studio'
+
+[noketd]
+probe_timeout = '10s'
+upstream_write_timeout = '10s'
+probe_max_bytes = 1048576
+
+[[upstreams]]
+name = 'ollama'
+protocol = 'openai'
+base_url = 'http://127.0.0.1:11434'
+api_key = '<local-key>'
+models = ['qwen3:32b', 'llama3.1:8b']
+
+[[upstreams]]
+name = 'vllm'
+protocol = 'openai'
+base_url = 'http://127.0.0.1:8000'
+api_key = ''
+models = ['mistral-7b-instruct']

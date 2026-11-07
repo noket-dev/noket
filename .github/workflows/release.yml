@@ -1,0 +1,31 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v23
+
+      - name: Enable the Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v15
+
+      # goreleaser, Go, and git all come from the flake's dev shell, so CI
+      # releases with the same toolchain versions as local `nix develop`.
+      - name: Run GoReleaser
+        run: nix develop --command -- goreleaser release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

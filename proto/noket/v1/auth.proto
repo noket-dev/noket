@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package noket.v1;
+
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/noket-dev/noket/gen/noket/v1;noketv1";
+
+// The CLI-side subset of the control plane's AuthService: the CLI only redeems
+// the one-time code the browser mints. The service and message names, field
+// numbers and validation rules must stay identical to noket-api's auth.proto so
+// the wire contract matches.
+service AuthService {
+  // Browser-assisted login for the noket CLI. The console page mints a
+  // one-time code from an authenticated session; the CLI redeems it for the
+  // same JWT a browser login would issue.
+  rpc ExchangeCliAuthorizationCode(ExchangeCliAuthorizationCodeRequest)
+      returns (ExchangeCliAuthorizationCodeResponse) {}
+}
+
+message ExchangeCliAuthorizationCodeRequest {
+  string code = 1 [(buf.validate.field).string.pattern = "^[A-Za-z0-9_-]{43}$"];
+  string code_verifier = 2 [(buf.validate.field).string.pattern = "^[A-Za-z0-9._~-]{43,128}$"];
+  string redirect_uri = 3 [
+    (buf.validate.field).string.min_len = 1,
+    (buf.validate.field).string.max_len = 2048
+  ];
+}
+
+message ExchangeCliAuthorizationCodeResponse {
+  string token = 1;
+}

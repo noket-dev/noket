@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check (Nix)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v23
+
+      - name: Enable the Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v15
+
+      # Fails when go.mod or go.sum changed without updating flake.nix's vendorHash.
+      - name: Build
+        run: nix build .#noket --no-link --print-out-paths
+
+      - name: Format, vet, test
+        run: nix develop --command -- make check
+
+      - name: Race tests
+        run: nix develop --command -- make test-race
+
+      - name: Modules are tidy
+        run: nix develop --command -- bash -c 'go mod tidy && git diff --exit-code -- go.mod go.sum'
+
+      - name: Lint protobuf
+        run: nix develop --command -- make proto-lint
+
+      # gen/ is committed, so a proto change has to land with its generated code.
+      - name: Generated code is up to date
+        run: nix develop --command -- bash -c 'make generate && test -z "$(git status --porcelain -- gen/)"'
+
+      - name: GoReleaser config is valid
+        run: nix develop --command -- goreleaser check
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Runs the per-OS code (sw_vers, /etc/os-release, RtlGetVersion) on its real host.
+      - name: Test
+        run: go test ./...

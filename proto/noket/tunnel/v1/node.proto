@@ -1,0 +1,176 @@
+syntax = "proto3";
+
+package noket.tunnel.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/noket-dev/noket/gen/noket/tunnel/v1;tunnelv1";
+
+enum NodeStatus {
+  NODE_STATUS_UNSPECIFIED = 0;
+  NODE_STATUS_OFFLINE = 1;
+  NODE_STATUS_ONLINE = 2;
+}
+
+enum UpstreamProtocol {
+  UPSTREAM_PROTOCOL_UNSPECIFIED = 0;
+  UPSTREAM_PROTOCOL_OPENAI = 1;
+  UPSTREAM_PROTOCOL_ANTHROPIC = 2;
+}
+
+// Live projection of a local upstream; never persisted. Local config still uses
+// openai / anthropic, and the noketd maps it to this enum on load.
+message Upstream {
+  // Local identifier for the upstream; not exposed to request routing.
+  string name = 1;
+  UpstreamProtocol protocol = 2;
+
+  // Address reachable from the local machine, without a version prefix.
+  string base_url = 3;
+
+  // Model ids exposed to the cloud and used as `model` in request bodies;
+  // returned in config order and unique within the node.
+  repeated string models = 4;
+
+  // Whether an API key is configured; the key itself is never reported.
+  bool has_api_key = 5;
+}
+
+message Node {
+  string id = 1;
+  string name = 2;
+  NodeStatus status = 3;
+  google.protobuf.Timestamp last_seen_at = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+// Informational machine details reported by the agent on registration. Never
+// used for routing or authorization.
+message NodeConfig {
+  // Runtime platform of the agent host: linux, darwin or windows.
+  string platform = 1;
+
+  // Runtime architecture of the agent host, for example amd64 or arm64.
+  string arch = 2;
+
+  // Agent build version, for example v0.1.0.
+  string version = 3;
+
+  // Host operating system version, kept as one display string because the
+  // platforms have no shared version format. Examples: "Ubuntu 24.04.1 LTS",
+  // "macOS 15.5", "Windows 11 build 22631".
+  string os_version = 4;
+}
+
+message RegisterNodeRequest {
+  // UUID generated and persisted by the noketd on first start; the server
+  // upserts by it.
+  string node_id = 1;
+  string name = 2;
+
+  // UUID generated for each WebSocket connection; a new connection for the same
+  // node replaces the old one.
+  string connection_id = 3;
+
+  // UUID generated when the gateway instance starts, used for cross-instance
+  // kicks.
+  string gateway_id = 4;
+
+  // Reported on every registration. Omitted by agents that do not report it;
+  // the stored value is then left unchanged.
+  NodeConfig config = 5;
+}
+
+message RegisterNodeResponse {
+  Node node = 1;
+
+  // Previous connection that was replaced; empty when there was none.
+  string previous_connection_id = 2;
+  string previous_gateway_id = 3;
+}
+
+message GetNodeUpstreamsRequest {
+  string node_id = 1;
+}
+
+message GetNodeUpstreamsResponse {
+  // Built from the noketd's in-memory config snapshot when read; excludes
+  // api_key and does not expand the model list again.
+  repeated Upstream upstreams = 1;
+
+  // When the noketd last loaded its config successfully, not the response time;
+  // used to show freshness.
+  google.protobuf.Timestamp captured_at = 2;
+}
+
+message ProbeUpstreamRequest {
+  string node_id = 1;
+  UpstreamProtocol protocol = 2;
+  string base_url = 3;
+
+  // When omitted: an empty name probes without a key; a known name with an
+  // unchanged base_url reuses the local key; a known name with a changed
+  // base_url and no key returns 400. An explicit empty string probes without a
+  // key. Forwarded to the noketd only in this request's memory; never persisted
+  // or logged.
+  optional string api_key = 4;
+
+  // Name of the existing upstream when editing, used to reuse the local key;
+  // omit when adding. Returns 404 when the name does not match an upstream.
+  string name = 5;
+}
+
+message ProbeUpstreamResponse {
+  repeated string models = 1;
+}
+
+message CreateUpstreamRequest {
+  string node_id = 1;
+  string name = 2;
+  UpstreamProtocol protocol = 3;
+  string base_url = 4;
+
+  // Complete model list exposed by this upstream after creation.
+  repeated string models = 5;
+
+  // Forwarded to the noketd only in this request's memory; never persisted or
+  // logged.
+  string api_key = 6;
+}
+
+message CreateUpstreamResponse {
+  Upstream upstream = 1;
+}
+
+message UpdateUpstreamRequest {
+  string node_id = 1;
+
+  // Current name used for lookup; set new_name when renaming.
+  string name = 2;
+  UpstreamProtocol protocol = 3;
+  string base_url = 4;
+
+  // Replaces the upstream's model list completely; not a merge.
+  repeated string models = 5;
+
+  // Omit to keep the existing key; pass an explicit empty string to clear it.
+  // Required when changing base_url so the old key is never sent to a new
+  // address.
+
+  optional string api_key = 6;
+
+  // Omit to keep the current name; returns 409 when an upstream with that name
+  // already exists.
+  optional string new_name = 7;
+}
+
+message UpdateUpstreamResponse {
+  Upstream upstream = 1;
+}
+
+message DeleteUpstreamRequest {
+  string node_id = 1;
+  string name = 2;
+}
+
+message DeleteUpstreamResponse {}
