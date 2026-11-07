@@ -42,6 +42,7 @@
           protobuf
           protoc-gen-connect-go
           protoc-gen-go
+          syft
         ]);
     in {
       packages = {
