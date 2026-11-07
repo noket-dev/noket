@@ -847,7 +847,7 @@ finish() {
 
 	if [ "$DO_AUTOSTART" = 1 ] && [ ! -f "$(config_dir)/credentials.json" ]; then
 		say ""
-		say "The agent retries until you run: noket login"
+		say "The agent waits until you run: noket login"
 	fi
 }
 
