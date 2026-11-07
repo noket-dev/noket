@@ -5,13 +5,14 @@
 .DESCRIPTION
     Downloads a signed release archive for this machine, verifies its SHA-256
     checksum, installs noket.exe and noketd.exe, adds them to the user PATH,
-    and registers a Scheduled Task that runs `noket up --foreground` at logon.
+    installs shell completions in the PowerShell profile, and registers a
+    Scheduled Task that runs `noket up --foreground` at logon.
 
 .EXAMPLE
     irm https://raw.githubusercontent.com/noket-dev/noket/main/install.ps1 | iex
 
 .EXAMPLE
-    .\install.ps1 -Version v0.1.0 -InstallDir C:\Tools\noket -NoAutostart
+    .\install.ps1 -Version v0.1.0 -InstallDir C:\Tools\noket -NoAutostart -NoCompletion
 
 .EXAMPLE
     .\install.ps1 -Uninstall -Purge
@@ -22,12 +23,15 @@ param(
     [string]$InstallDir = $env:NOKET_INSTALL_DIR,
     [switch]$NoAutostart,
     [switch]$NoLogin,
+    [switch]$NoCompletion,
     [switch]$Uninstall,
     [switch]$Purge
 )
 
 $Repo = 'noket-dev/noket'
 $TaskName = 'Noket'
+$MarkerBegin = '# noket'
+$MarkerEnd = '# noket end'
 $ConfigDir = if ($env:NOKET_CONFIG_DIR) { $env:NOKET_CONFIG_DIR } else { Join-Path $env:USERPROFILE '.noket' }
 
 if (-not $InstallDir) {
@@ -154,6 +158,72 @@ function Remove-NoketFromUserPath([string]$Dir) {
     }
 }
 
+function Get-NoketProfilePath {
+    # AllHosts is the profile both Windows PowerShell and PowerShell 7 read.
+    return $PROFILE.CurrentUserAllHosts
+}
+
+function Set-NoketProfileBlock([string]$Path, [string[]]$Block) {
+    if (-not $Path) {
+        return
+    }
+    if (-not (Test-Path -LiteralPath $Path) -and (-not $Block -or $Block.Count -eq 0)) {
+        return
+    }
+
+    $lines = @()
+    if (Test-Path -LiteralPath $Path) {
+        $lines = @(Get-Content -LiteralPath $Path)
+    }
+    $kept = New-Object System.Collections.Generic.List[string]
+    $skip = $false
+    foreach ($line in $lines) {
+        $trimmed = $line.Trim()
+        if ($trimmed -eq $MarkerBegin) { $skip = $true; continue }
+        if ($trimmed -eq $MarkerEnd) { $skip = $false; continue }
+        if (-not $skip) { $kept.Add($line) }
+    }
+    if ($Block -and $Block.Count -gt 0) {
+        $kept.Add('')
+        foreach ($line in $Block) { $kept.Add($line) }
+    }
+
+    $dir = Split-Path -Parent $Path
+    if ($dir) {
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    }
+    [IO.File]::WriteAllLines($Path, $kept.ToArray())
+}
+
+# The script is written once at install time, so a new PowerShell session does
+# not have to run the binary just to load its completions.
+function Add-NoketCompletion([string]$Exe, [string]$Dir) {
+    if ($NoCompletion) {
+        return
+    }
+    $profilePath = Get-NoketProfilePath
+    if (-not $profilePath) {
+        return
+    }
+
+    $file = Join-Path $Dir 'completion.ps1'
+    $content = (& $Exe completion powershell) -join [Environment]::NewLine
+    [IO.File]::WriteAllText($file, $content)
+
+    $escaped = $file.Replace("'", "''")
+    $block = @(
+        $MarkerBegin
+        "if (Test-Path -LiteralPath '$escaped') { . '$escaped' }"
+        $MarkerEnd
+    )
+    Set-NoketProfileBlock -Path $profilePath -Block $block
+    Write-Note "Added shell completions to $profilePath"
+}
+
+function Remove-NoketCompletion {
+    Set-NoketProfileBlock -Path (Get-NoketProfilePath) -Block @()
+}
+
 function Invoke-NoketLogin {
     if ($NoLogin) {
         return
@@ -259,8 +329,10 @@ function Uninstall-Noket {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
 
     Remove-NoketFromUserPath $InstallDir
+    Remove-NoketCompletion
     Remove-Item -LiteralPath $NoketExe -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $NoketdExe -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Join-Path $InstallDir 'completion.ps1') -Force -ErrorAction SilentlyContinue
 
     if ($Purge) {
         if ($ConfigDir -and $ConfigDir -ne $env:USERPROFILE -and $ConfigDir -ne [IO.Path]::GetPathRoot($ConfigDir)) {
@@ -286,6 +358,7 @@ if ($Uninstall) {
 
 $tag = Install-Noket
 Add-NoketToUserPath $InstallDir
+Add-NoketCompletion $NoketExe $InstallDir
 Invoke-NoketLogin
 Enable-NoketAutostart
 
