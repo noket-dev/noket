@@ -65,6 +65,13 @@ jobs:
         run: npm ci
         working-directory: docs
 
+      # Build first: it materializes .nimbus/lint.json (the rule severities) and
+      # .nimbus/routes.json (the route map the internal-link rule checks
+      # against), so lint and check can run their full rule sets.
+      - name: Build
+        run: npm run build
+        working-directory: docs
+
       - name: Lint content
         run: npm run lint:docs
         working-directory: docs
@@ -75,10 +82,6 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
-        working-directory: docs
-
-      - name: Build
-        run: npm run build
         working-directory: docs
 
       - name: Upload Pages artifact

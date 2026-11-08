@@ -23,6 +23,9 @@ astro dev --background
 
 Manage it with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+Run `npm run build` once in a fresh checkout before the checks below: lint and `nimbus-docs check`
+read `.nimbus/lint.json` and `.nimbus/routes.json`, which only a dev run or a build writes.
+
 Before committing, run:
 
 - `npm run lint:docs` — Nimbus authoring rules; `nimbus/frontmatter-shape` and
