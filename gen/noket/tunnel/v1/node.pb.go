@@ -279,15 +279,15 @@ func (x *Node) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-// Informational machine details reported by the agent on registration. Never
+// Informational machine details reported by the connector on registration. Never
 // used for routing or authorization.
 type NodeConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Runtime platform of the agent host: linux, darwin or windows.
+	// Runtime platform of the connector host: linux, darwin or windows.
 	Platform string `protobuf:"bytes,1,opt,name=platform,proto3" json:"platform,omitempty"`
-	// Runtime architecture of the agent host, for example amd64 or arm64.
+	// Runtime architecture of the connector host, for example amd64 or arm64.
 	Arch string `protobuf:"bytes,2,opt,name=arch,proto3" json:"arch,omitempty"`
-	// Agent build version, for example v0.1.0.
+	// Connector build version, for example v0.1.0.
 	Version string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
 	// Host operating system version, kept as one display string because the
 	// platforms have no shared version format. Examples: "Ubuntu 24.04.1 LTS",
@@ -367,7 +367,7 @@ type RegisterNodeRequest struct {
 	// UUID generated when the gateway instance starts, used for cross-instance
 	// kicks.
 	GatewayId string `protobuf:"bytes,4,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty"`
-	// Reported on every registration. Omitted by agents that do not report it;
+	// Reported on every registration. Omitted by connectors that do not report it;
 	// the stored value is then left unchanged.
 	Config        *NodeConfig `protobuf:"bytes,5,opt,name=config,proto3" json:"config,omitempty"`
 	unknownFields protoimpl.UnknownFields

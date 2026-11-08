@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Installs noket and noketd on Windows and registers the agent at logon.
+    Installs noket and noketd on Windows and registers the connector at logon.
 
 .DESCRIPTION
     Downloads a signed release archive for this machine, verifies its SHA-256
@@ -260,7 +260,7 @@ function Enable-NoketAutostart {
 
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $arguments
 
-    # AtLogOn starts the agent after a boot; the repetition restarts it when it
+    # AtLogOn starts the connector after a boot; the repetition restarts it when it
     # exited for another reason. IgnoreNew keeps the retry from starting a
     # second daemon while the first is waiting for a login or connected.
     $triggers = @(
@@ -278,11 +278,11 @@ function Enable-NoketAutostart {
         Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $triggers `
             -Settings $settings -Principal $principal -Force | Out-Null
         Start-ScheduledTask -TaskName $TaskName
-        Write-Step "Agent enabled (Scheduled Task: $TaskName); it starts at logon"
+        Write-Step "Connector enabled (Scheduled Task: $TaskName); it starts at logon"
     }
     catch {
         Write-Warn "could not register the Scheduled Task: $($_.Exception.Message)"
-        Write-Warn "start the agent manually with: `"$NoketExe`" up"
+        Write-Warn "start the connector manually with: `"$NoketExe`" up"
     }
 }
 
@@ -373,5 +373,5 @@ Write-Host 'Open a new terminal so the updated PATH takes effect.'
 Write-Host "Logs: $(Join-Path $ConfigDir 'noketd.log')"
 if (-not (Test-Path -LiteralPath (Join-Path $ConfigDir 'credentials.json'))) {
     Write-Host ''
-    Write-Host 'The agent waits until you run: noket login'
+    Write-Host 'The connector waits until you run: noket login'
 }
