@@ -1,0 +1,46 @@
+---
+title: Environment variables
+description: The environment variables that change Noket's behavior.
+sidebar:
+  order: 2
+---
+
+Noket reads very little from the environment. Configuration belongs in
+[`config.toml`](/reference/config/), and credentials belong in files, not variables.
+
+| Variable | Used by | Effect |
+| --- | --- | --- |
+| `NOKET_CONFIG_DIR` | `noket`, `noketd` | Directory for config, credentials, node id, log, and status. Defaults to `~/.noket`. A relative path is resolved against the current directory. |
+| `NO_COLOR` | `noket` | Set to any non-empty value to turn off colour in tables, status, and progress output. |
+| `TERM=dumb` | `noket` | Output is treated as non-interactive: no colour, no styled tables. |
+
+## Installer variables
+
+The macOS and Linux installer also reads:
+
+| Variable | Effect |
+| --- | --- |
+| `NOKET_VERSION` | Release to install, for example `v0.1.1`. Defaults to the latest. |
+| `NOKET_INSTALL_DIR` | Install directory. Defaults to `~/.local/bin`. |
+| `NOKET_INSTALL_REF` | Git ref the installer script itself is fetched from, for testing an unreleased script. |
+
+## What is not configurable this way
+
+- **API and tunnel endpoints.** Set `api.base_url` and `tunnel.url` in `config.toml`.
+- **Upstream keys.** Pass them on standard input. There is no environment variable for a key, on
+  purpose: environment variables leak into process listings, crash reports, and child processes.
+- **Proxy settings for upstreams.** Noket deliberately bypasses proxies for loopback and private
+  upstream URLs.
+
+## Example
+
+Run a second, isolated connector for testing, with its own config and no colour:
+
+```bash
+NOKET_CONFIG_DIR=/tmp/noket-test NO_COLOR=1 noket status
+```
+
+## Next
+
+- [Configuration file](/reference/config/)
+- [Files and directories](/reference/files/)

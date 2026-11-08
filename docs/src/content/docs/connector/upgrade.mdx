@@ -1,0 +1,57 @@
+---
+title: Upgrade
+description: Move an installation to a newer release.
+sidebar:
+  order: 6
+---
+
+Run the installer again. It downloads the latest release, verifies the checksum, and replaces both
+binaries:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/noket-dev/noket/main/install.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/noket-dev/noket/main/install.ps1 | iex
+```
+
+Before replacing the binaries, the installer stops the running connector through its supervisor, then
+starts it again afterwards, so the new binary is the one that connects. Your `config.toml`,
+credentials, node id, and logs in the [config directory](/reference/files/) are left alone.
+
+## Pin a specific version
+
+Both installers accept a version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/noket-dev/noket/main/install.sh | bash -s -- --version v0.1.1
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/noket-dev/noket/main/install.ps1))) -Version v0.1.1
+```
+
+On macOS and Linux the environment variables `NOKET_VERSION` and `NOKET_INSTALL_REF` do the same job
+without the extra `-s --`; they exist for automation.
+
+## Manual upgrade
+
+If you installed by hand, stop the connector, replace the binaries, and start it again:
+
+```bash
+noket down
+# replace the binaries wherever you put them
+noket up
+```
+
+Under a supervisor, stop and start the unit or task instead of using `noket down`.
+
+Check what you are running with `noket --version`. The version of `noket` and `noketd` should match;
+if they do not, the install directory has one file from each release, which happens when a manual copy
+is interrupted.
+
+## Next
+
+- [Uninstall](/connector/uninstall/)
+- [Troubleshooting](/troubleshooting/)

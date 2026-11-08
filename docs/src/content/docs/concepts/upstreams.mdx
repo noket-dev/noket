@@ -1,0 +1,82 @@
+---
+title: Upstreams
+description: What an upstream is and the rules it must satisfy.
+sidebar:
+  order: 2
+---
+
+An upstream is one LLM API that Noket can reach from the machine running the connector. It has a name, a
+protocol, a base URL, an optional key, optional headers, and a list of model ids.
+
+Upstreams live in [`config.toml`](/reference/config/) in the [config directory](/reference/files/). You
+can create them with the [CLI](/reference/cli/upstream/), the [terminal UI](/connector/tui/), the
+[console](/console/tunnel/upstreams/), or by editing the file.
+
+## Fields
+
+| Field | Rules |
+| --- | --- |
+| `name` | 1–64 characters: letters, digits, `.`, `_`, `-`. Not `.` or `..`. Unique on this machine. |
+| `protocol` | `openai` or `anthropic`. Must match what the server actually implements. |
+| `base_url` | `http` or `https`. No query string, fragment, or embedded credentials. Loopback and private addresses are allowed. |
+| `api_key` | Optional. Sent as `Authorization: Bearer` for `openai` and `x-api-key` for `anthropic`. |
+| `headers` | Optional extra request headers, as a table. |
+| `models` | The model ids to expose. Must be unique across *all* upstreams on this machine. |
+
+## Model ids
+
+A model id is the string clients send as `model`, and it is also how the connector chooses an upstream. When
+a request arrives, the connector reads the `model` field from the JSON body and looks for an upstream that
+lists it.
+
+- Each id must appear in exactly one upstream. The configuration is rejected if two upstreams share an
+  id, because there would be no way to choose.
+- A request for an id that no upstream lists fails with `404 model_not_found`. The connector does not fall
+  back to a default upstream and does not rename anything.
+- An upstream may list several ids; each becomes a separate model in the console.
+
+## Base URL details
+
+Some servers expose their API at the root (`http://127.0.0.1:11434`), others behind `/v1`
+(`http://127.0.0.1:1234/v1`). Both are accepted. Noket adds the versioned suffix it needs when probing
+and forwarding, and it does not produce `/v1/v1`.
+
+Loopback and private addresses are deliberate: most upstreams run on your own machine or LAN. Noket
+bypasses HTTP proxies for these URLs, so a proxy setting in your environment cannot intercept a local
+server.
+
+## Keys
+
+The key is stored in `config.toml` with mode `0600`. It is read from standard input, never from a
+command-line argument, and commands only report whether a key is set — `noket upstream list` shows
+`set` or `not set`, never the value.
+
+Changing the base URL of an upstream requires either a new key or an explicit `--clear-api-key`,
+because a key issued for one host should not be sent to another.
+
+## Headers
+
+Extra headers are configured in `config.toml`:
+
+```toml
+[[upstreams]]
+name = "gateway"
+protocol = "openai"
+base_url = "https://gateway.internal"
+headers = { "X-Route" = "team-a" }
+models = ["internal-large"]
+```
+
+Avoid putting credentials in headers when the key field does the job; headers are stored the same way,
+but they are more likely to appear in a copied snippet.
+
+## Removing and renaming
+
+`noket upstream edit <name> --new-name <new>` renames an upstream. A rename does not affect models in
+the console, which bind to the model id, not the upstream name. Deleting an upstream that still serves
+a bound model is refused until the binding is removed.
+
+## Next
+
+- [Probing and model discovery](/concepts/probing-and-model-discovery/)
+- [How the tunnel works](/concepts/how-the-tunnel-works/)

@@ -1,0 +1,79 @@
+---
+title: Sharing and limits
+description: Who can call a model, what they may spend, and who pays for it.
+sidebar:
+  order: 6
+---
+
+Sharing is access to a model, nothing more. A member never receives the owner's provider key, the
+node's configuration, or the ability to run the connector. They call the model with their own Noket API
+key from their own account.
+
+## Roles
+
+| Role | Can call the model | Can manage members | Can edit the model |
+| --- | --- | --- | --- |
+| Owner | Yes | Yes, including granting Admin | Yes |
+| Admin | Yes | Yes, for Members | No |
+| Member | Yes | No | No |
+
+Only the owner can grant Admin. Admins can add, edit, and remove members below the owner's limits, but
+cannot change the model, its source, or its budget.
+
+## Access and invitations
+
+Access can be granted to an existing account by username or email, or sent as an invitation. An
+invitation link is valid for seven days, carries the role, access expiry, and limits chosen when it was
+sent, and can be accepted once. At most 50 invitations may be pending per model.
+
+Access may expire — after a day, a week, a month, a year — or never. Expiry applies to the account, not
+to a key: when it passes, every key in that account loses the model.
+
+Accepting access does not create an API key. The member uses a key they create in their own account.
+
+## Two levels of limit
+
+Every request must fit within both levels:
+
+- **The model's limits** apply to all callers together. They cap what the owner can spend in total.
+- **A member's limits** are an additional ceiling on that account's calls. They are not a separate
+  balance, so spending by other members does not consume them.
+
+Both levels can limit budget, tokens, and requests, each with its own period. A blank limit means
+unlimited. Each period resets its own counter on a fixed schedule; the console shows the reset time.
+
+The model's **Quota** tab also sets concurrency, request rate, and maximum output. Those control how a
+request is served, not how much it costs.
+
+## Who pays
+
+The model's owner pays for every request anyone makes, including members'. The price comes from the
+model's configuration, and the console records the cost reported by the gateway rather than
+recomputing it. When the gateway reports no cost, the console shows it as unknown instead of zero.
+
+Members see their own usage only. The owner sees the model's usage and logs, and each member's spend
+against their limits.
+
+## When a limit is reached
+
+Requests are refused with `429` until the period resets or the limit is raised. Raising a limit takes
+effect immediately; lowering one does not erase what was already spent. The model card and detail page
+show spent against limit, and a periodic limit shows when it resets.
+
+A model's own state matters too: a paused or draft model refuses requests regardless of budget. See
+[Errors and limits](/api/errors/) for what callers receive.
+
+## Ending access
+
+Removing a member or revoking an invitation takes effect at once for every key in that account. Other
+models are unaffected, and no spent amount is refunded or cleared. A member can also leave a shared
+model from its card, which ends access for all of their keys.
+
+Deleting a model removes it for everyone. Pausing it keeps the access, usage, and configuration so the
+owner can resume it later.
+
+## Next
+
+- [Models](/concepts/models/)
+- [Budgets and limits](/console/models/budget/)
+- [Share a model](/console/models/sharing/)

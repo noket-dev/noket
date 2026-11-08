@@ -1,0 +1,123 @@
+---
+title: Run as a service
+description: Keep the connector running at login with launchd, systemd, or a Windows Scheduled Task.
+sidebar:
+  order: 5
+---
+
+The installers enable the connector at login by default, so `noketd` starts whenever you sign in and
+restarts when it fails. This page explains what was installed and how to control it.
+
+## Supervision versus `noket up`
+
+There are two ways to run the connector:
+
+- **`noket up`** starts a detached `noketd` and records its pid in `noketd.pid`. `noket down` stops it.
+  Good for trying things out.
+- **A supervisor** runs `noket up --foreground`. In this mode the connector stays in the foreground, writes
+  no pid file, and waits for a login instead of exiting if none exists. The supervisor decides when to
+  stop it, and `noket down` does not apply.
+
+Do not run both. `noket up` refuses to start a second connector if one is already running, and `noket status`
+shows who started it.
+
+## What the installer created
+
+### macOS
+
+A launchd user agent at `~/Library/LaunchAgents/dev.noket.connector.plist` with the label `dev.noket.connector`,
+configured to run at login and to be restarted if it exits.
+
+```bash
+launchctl print "gui/$UID/dev.noket.connector"
+launchctl kickstart -k "gui/$UID/dev.noket.connector"
+launchctl bootout "gui/$UID/dev.noket.connector"
+```
+
+`kickstart -k` restarts the connector; `bootout` stops it until the next login.
+
+### Linux
+
+A systemd user unit at `~/.config/systemd/user/noket.service`.
+
+```bash
+systemctl --user status noket.service
+systemctl --user restart noket.service
+journalctl --user -u noket.service -f
+```
+
+To keep the service running after you log out, enable lingering for your user:
+
+```bash
+loginctl enable-linger "$USER"
+```
+
+### Windows
+
+A Scheduled Task named `Noket`, triggered at sign-in and once at install time.
+
+```powershell
+Get-ScheduledTask -TaskName Noket
+Start-ScheduledTask -TaskName Noket
+Stop-ScheduledTask -TaskName Noket
+```
+
+## Set it up by hand
+
+If you installed manually or declined autostart, run the connector under any supervisor. The process to
+supervise is:
+
+```bash
+noket up --foreground
+```
+
+The supervisor should restart it if it exits and should start it at boot or login. A minimal systemd
+user unit looks like this:
+
+```ini
+[Unit]
+Description=Noket connector
+After=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/noket up --foreground
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
+```
+
+Replace the path with wherever you installed `noket`. Under launchd, use a
+`ProgramArguments` array with `up` and `--foreground` and set `KeepAlive` to true.
+
+## Checking on the connector
+
+```bash
+noket status
+```
+
+The status shows the account, the node id and name, whether the connector is running, its pid, and the log
+path. Under a supervisor the pid is the supervised process; the log file is `noketd.log` in the config
+directory.
+
+## Restarting after a change
+
+The connector re-reads `config.toml` on each heartbeat and reconnects with backoff if the tunnel drops, so
+most changes need no restart. Restart it after:
+
+- a new `noket login`, because credentials are read at startup;
+- an upgrade, so the new binary runs;
+- a change to `[api]` or `[tunnel]` that affects the connection itself.
+
+Use the supervisor command from above, or for a detached connector:
+
+```bash
+noket down
+noket up
+```
+
+## Next
+
+- [Upgrade](/connector/upgrade/)
+- [Files and directories](/reference/files/)

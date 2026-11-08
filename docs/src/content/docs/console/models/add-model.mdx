@@ -1,0 +1,90 @@
+---
+title: Add a model
+description: Create a model from an external API or from an upstream on your tunnel node.
+sidebar:
+  order: 2
+---
+
+Open [Models](https://noket.dev/models) and choose **Add model**. The form opens in a dialog; closing
+it keeps the list's current filters.
+
+One model entry is one callable model. If a server hosts several models, add each one separately —
+every entry gets its own slug, access, and limits.
+
+## Choose a source
+
+**Source** has two options:
+
+- **External API** — Noket calls an API directly, using the protocol, base URL, key, and model name
+  you enter.
+- **Tunnel node** — Noket forwards through the tunnel to an upstream on one of your machines.
+
+### Tunnel node
+
+Pick a node from the list; each entry shows whether the node is online. Then pick one of the upstream
+models that node reports. The protocol, base URL, and key come from the node's configuration, so the
+form does not ask for them, and there is nothing to test here — the node's own
+[`noket upstream test`](/reference/cli/upstream/test/) covers that.
+
+If a node is offline you cannot bind a new model to it. Editing an existing binding still works while
+the node is offline, as long as you do not change the node or the upstream model. If the node has no
+upstream models, the form links to the node's upstreams page; if you have no nodes at all, it links to
+the nodes page.
+
+Changing the node clears the selected model. Switching between an external API and a tunnel node also
+clears the model name, because an external model id is not an upstream model id.
+
+### External API
+
+| Field | Notes |
+| --- | --- |
+| API format | `openai` or `anthropic`. Fixed once the model is created; to change it, delete and recreate. |
+| API base URL | A public `http` or `https` URL. Private, loopback, and cloud metadata addresses are rejected with a reason. |
+| API key | Stored encrypted and shown again only to the model owner when editing. |
+| API model name | The model id the provider expects, for example `gpt-4.1-mini`. |
+
+**Test connection** sends a minimal request with the form's current settings without saving anything.
+Saving no longer runs that test implicitly; use the button before saving if you want the check.
+
+## Name and slug
+
+- **Name** is what people see in the console.
+- **Model slug** is what you pass as `model` when calling. It is composed as `username/slug`, where the
+  username part is fixed and the editable part allows letters, digits, dots, underscores, and hyphens.
+
+Two models cannot share a slug. If the save fails, the form stays open and you can try a different
+slug.
+
+## Prices and limits
+
+Prices are in USD per million tokens, for input, output, and cache reads. A price left blank counts as
+zero. Prices are informational for cost reporting; request cost comes from the gateway's own usage
+data rather than being recomputed from these fields.
+
+Limits apply to the model as a whole:
+
+- An **amount budget** in USD for a period.
+- A **token limit** and a **request limit**, each with its own period.
+- Leaving any of them blank means no limit for that item.
+
+Lowering a limit does not clear what has already been spent, and raising one does not reset counters.
+
+## Advanced settings
+
+Collapsed by default: context length, maximum output, request timeout, stream idle timeout, SSE, and
+custom headers. Leave them alone unless your upstream needs them.
+
+## Editing
+
+Editing reuses the same form. The protocol is read-only, and for a tunnel model you can change the node
+and the upstream model — the latter limited to models with the same protocol as the current binding.
+Switching a tunnel model to an external API requires a new API key; the node token is never treated as
+one.
+
+Deleting a model asks for confirmation. It removes the external configuration when there is one, then
+hides the model from the list.
+
+## Next
+
+- [Model details](/console/models/model-detail/)
+- [Share a model](/console/models/sharing/)

@@ -1,0 +1,49 @@
+---
+title: Nodes
+description: The machines running the Noket connector.
+sidebar:
+  order: 1
+---
+
+[Tunnel → Nodes](https://noket.dev/tunnel/nodes) lists the machines that have connected to your account
+with `noketd`. Each row is one node: its name, whether it is online, and when it was last seen.
+
+## Creating a node
+
+A node is created by the connector, not in the console. The first time you run [`noket up`](/reference/cli/up/)
+on a machine, Noket generates a node id, stores it in `node.json` in the [config directory](/reference/files/),
+and registers the node. From then on that machine is the same node, across restarts and upgrades.
+
+## Naming
+
+The node name defaults to the machine's host name. Override it with `--name` on
+[`noket up`](/reference/cli/up/), or set `name` in the `[tunnel]` section of `config.toml`:
+
+```toml
+[tunnel]
+name = "gpu-box"
+```
+
+The name is a label in the console. Changing it does not create a second node.
+
+## Online status
+
+A node is online while its connector holds the tunnel connection. If a machine sleeps, loses its network,
+or the connector exits, the node shows as offline; the connector reconnects when it can and the node comes back
+without any action from you.
+
+Models bound to an offline node cannot serve requests. Their calls fail until the node returns.
+
+## Removing a node
+
+Remove a node from the console when you retire a machine, or to clean up after a reinstall that lost
+`node.json`. Removing it deletes its registration; if the connector is still running, it registers again the
+next time it connects.
+
+Before removing a node, check [Models](/console/models/) for models bound to it. Those models stop
+working and need a new binding.
+
+## Next
+
+- [Upstreams](/console/tunnel/upstreams/)
+- [How the tunnel works](/concepts/how-the-tunnel-works/)

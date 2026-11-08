@@ -1,0 +1,35 @@
+---
+title: Local model servers
+description: Serve models on your machine and expose them through an upstream.
+sidebar:
+  order: 8
+  label: Overview
+---
+
+Any HTTP API that speaks the OpenAI or Anthropic protocol can sit behind a Noket upstream. These
+guides cover the runtimes people use most, with the addresses and flags each one needs.
+
+| Runtime | Guide | Default address | Protocol |
+| --- | --- | --- | --- |
+| Ollama | [Ollama](/connector/local-models/ollama/) | `http://127.0.0.1:11434` | `openai` |
+| vLLM | [vLLM](/connector/local-models/vllm/) | `http://127.0.0.1:8000` | `openai` |
+| LM Studio | [LM Studio](/connector/local-models/lm-studio/) | `http://127.0.0.1:1234` | `openai` |
+| Any Messages API server | [Anthropic-compatible servers](/connector/local-models/anthropic-compatible/) | varies | `anthropic` |
+
+## What Noket needs from a server
+
+- An address the machine running the connector can reach. Loopback is fine; Noket calls it from the connector,
+  not from the cloud.
+- A model id the server reports at `{base_url}/v1/models`, or an id you can type by hand when the probe
+  does not return one.
+- The OpenAI or Anthropic wire format. If a server offers both, pick the one whose response format your
+  clients expect.
+- An API key only when the server requires one. Local servers usually do not; if yours does, pipe the
+  key into `noket upstream add` from your secret manager.
+
+A trailing `/v1` in the base URL is allowed. Noket normalizes the path before probing and forwarding.
+
+## Next
+
+- [Add and manage upstreams](/connector/upstreams/)
+- [Probing and model discovery](/concepts/probing-and-model-discovery/)

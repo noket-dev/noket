@@ -1,0 +1,73 @@
+---
+title: Security and privacy
+description: Where your keys live, what Noket sees, and what stays on your machine.
+sidebar:
+  order: 7
+---
+
+Noket is designed around one rule: your upstream credentials stay on your machine, and the cloud reaches
+your models through a connection your machine opens.
+
+## Upstream keys
+
+- The upstream's API key is stored in `config.toml` in the [config directory](/reference/files/), which
+  is `0700` with files at `0600`, or the user's ACL on Windows.
+- It is read from standard input, never from a command-line argument or an environment variable.
+- It is not sent to the cloud as part of the upstream list the node reports.
+- When you add or edit an upstream in the console, the key travels to the connector for that request only.
+  The service does not store it, and it does not appear in logs.
+
+The console's model configuration stores a **node token**, not your upstream key. Requests are
+authenticated to your node with that token, and the connector uses the real upstream key locally.
+
+## Your Noket credentials
+
+`noket login` saves a token to `credentials.json` in the same directory, with the same permissions.
+`noket logout` removes it. Deleting the file is equivalent, but stop the connector first: it reads
+credentials at startup.
+
+API keys you create in the console are separate. They are shown once, stored masked, and work until you
+delete them. Revoke a key if it leaks; deleting it stops new requests immediately.
+
+## What leaves your machine
+
+- The names, protocols, base URLs, and model ids of your upstreams, so the console can show them.
+- Request metadata: which model was called, status, token counts, cost, and latency.
+- The request and response bodies, as they pass through Noket to reach your upstream — that is the
+  point of a tunnel.
+
+Noket does not persist prompt or completion bodies by default. Logs and errors do not contain
+credentials or full upstream responses.
+
+## What stays local
+
+- Model weights and inference. They never move; only the HTTP traffic does.
+- Upstream keys, unless you enter one in the console.
+- The node's configuration and logs, in the config directory.
+
+## The connection
+
+The connector opens an outbound WebSocket and keeps it open. Your machine does not listen for inbound
+connections, so there is no port to expose and nothing to scan. Loopback and private upstream addresses
+bypass HTTP proxies.
+
+A node id is per account and per machine. Another account on the same machine gets a different node id.
+
+## Things to be careful about
+
+- **Ollama and similar servers have no authentication by default.** If you expose one beyond loopback,
+  anything on that network can use it. Prefer keeping it on loopback and letting Noket carry the traffic.
+- **Do not pass keys on command lines.** They end up in shell history and process listings. Use
+  `--api-key-stdin` or the interactive form.
+- **Delete keys you no longer use.** A key in the console works for every model you can currently call,
+  so a leaked key is as broad as your access.
+
+## Reporting a problem
+
+If you believe a key was exposed, delete the API key in the console, run `noket logout` on affected
+machines, and rotate the upstream key with your provider. Then [log in](/connector/login/) again.
+
+## Next
+
+- [Configuration file](/reference/config/)
+- [Files and directories](/reference/files/)

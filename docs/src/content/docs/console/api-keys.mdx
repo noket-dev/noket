@@ -1,0 +1,56 @@
+---
+title: API keys
+description: Create account-wide keys for calling models.
+sidebar:
+  order: 3
+---
+
+[API keys](https://noket.dev/api-keys) are the credentials your applications use to call models. A key
+belongs to your account and can call every model your account can call — the ones you created and the
+ones shared with you. There is no per-key model scoping, and keys do not carry their own limits.
+
+## Create a key
+
+1. Open [API keys](https://noket.dev/api-keys) and choose **Create key**.
+2. Give it a name that says where it is used, for example `prod-backend` or `laptop`.
+3. Copy the value from the dialog that follows.
+
+The full value is shown once. After you close the dialog, only a masked fragment remains, and the full
+value cannot be retrieved again.
+
+## Using a key
+
+Send it as a bearer token for OpenAI-protocol models:
+
+```bash
+curl https://api.noket.dev/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "your-username/your-slug", "messages": [{"role": "user", "content": "Hello"}]}'
+```
+
+For an Anthropic-protocol model, send the same key in `x-api-key` to `/v1/messages`.
+
+Keep keys out of source control and shell history. Read them from your environment or a secret manager
+in the application that uses them.
+
+## Managing keys
+
+The table lists each key's name, a masked value, when it was created, and when it was last used. You
+can search by name, rename a key, and delete it.
+
+- Keys do not expire; they work until you delete them.
+- Deleting a key is permanent. Requests already in flight can finish within their budget, but new
+  requests with that key fail.
+- Deleting a key does not remove the models it could call, and it does not affect other keys in the
+  account.
+
+## Access changes
+
+When your account loses access to a model — an invitation expires, the owner revokes it, or the owner
+pauses the model — every key in your account loses that model at once. Other models keep working.
+
+## Next
+
+- [Usage](/console/usage/)
+- [Logs](/console/logs/)

@@ -1,0 +1,73 @@
+---
+title: How the tunnel works
+description: The outbound connection from your machine to Noket, and how a request reaches an upstream.
+sidebar:
+  order: 3
+---
+
+The tunnel lets Noket call an LLM server on your machine without that machine accepting inbound
+connections from the internet. The connector dials out; requests come back down that connection.
+
+## The connection
+
+`noketd` opens a WebSocket connection to the Noket tunnel endpoint, authenticating with your login.
+On the first connection it registers this machine as a **node**:
+
+1. The connector generates a node id and stores it in `node.json` next to its configuration.
+2. The node registers under your account with that id.
+3. Registration is idempotent, so restarts, upgrades, and short disconnections reuse the same node
+   rather than creating duplicates.
+
+The node id belongs to the account that created it. If you log in as a different account, the connector
+gets a separate node id for that account instead of reusing the first one. If the server refuses an id
+because it belongs to someone else, the connector generates a new one and retries once.
+
+## Forwarding a request
+
+When a request arrives for a model bound to this node:
+
+1. The connector reads the `model` field from the JSON body.
+2. It looks for exactly one upstream that lists that model id.
+3. It forwards the request to that upstream's base URL with the upstream's key and headers, using the
+   protocol the upstream declares.
+
+Nothing in the cloud chooses the upstream: the cloud forwards by node, and the connector decides locally.
+That is why two upstreams cannot advertise the same model id, and why an unknown id produces
+`404 model_not_found` instead of a guess.
+
+Response bodies, including streaming responses, come back along the same path.
+
+## What is not in the path
+
+- **No inbound port.** The machine does not need a public address, a forwarded port, or a firewall
+  change. The connection is outbound, like any other client.
+- **No proxy for local upstreams.** Loopback and private upstream URLs bypass HTTP proxies.
+- **No request retry or failover.** If an upstream fails, the request fails. Noket does not retry it or
+  send it to another upstream; retrying is the client's decision.
+- **No model routing.** A request goes to the model it names. There is no automatic selection between
+  upstreams.
+
+## Reconnection
+
+If the connection drops, the connector retries with exponential backoff from about one second up to sixty
+seconds, with jitter. The node comes back online by itself when the network returns. Requests during
+that window fail; they are not queued for later.
+
+## Configuration changes
+
+The connector rereads `config.toml` on its heartbeat. Adding, editing, or removing an upstream while the
+connector runs takes effect without a restart. A parse error leaves the previous configuration in place, so
+a typo does not take the node down; fix the file and the next heartbeat picks it up.
+
+Changes that affect the connection itself — the tunnel URL, the API base URL, or your login — need a
+restart of the connector.
+
+## Node limits
+
+Each account can have a limited number of nodes, currently 10. The limit applies when a new node is
+created; existing nodes keep working.
+
+## Next
+
+- [Security and privacy](/concepts/security-and-privacy/)
+- [Nodes in the console](/console/tunnel/nodes/)

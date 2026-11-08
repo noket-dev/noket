@@ -1,0 +1,63 @@
+---
+title: "Noket - AI, Yours to Share."
+description: Share and use AI models with the people you choose.
+sidebar:
+  order: 0
+  label: Noket
+---
+
+Noket lets one person share an AI model with other people, without handing over the API key behind it.
+The owner connects a model — one served by a local runtime through the Noket connector, or any public
+OpenAI- or Anthropic-compatible API — and decides who can use it, how much each person may spend, and
+when access ends. Everyone else calls the model with their own Noket API key, using the OpenAI or
+Anthropic SDK they already have.
+
+Inference stays wherever the model already runs. Noket carries the request, enforces budgets, and
+records who called what.
+
+## Start where you are
+
+<CardGrid>
+  <Card title="Use a model someone shared with you" icon="ph:user" href="/quickstarts/use-a-shared-model/">
+    Accept the invitation, create an API key, and make your first request.
+  </Card>
+  <Card title="Call the API from your app" icon="ph:code" href="/api/examples/">
+    Point the OpenAI or Anthropic SDK at Noket and keep the code you already have.
+  </Card>
+  <Card title="Share your models" icon="ph:users-three" href="/quickstarts/share-your-models/">
+    Add a model, set a budget, and invite the people who should use it.
+  </Card>
+  <Card title="Share a model on your machine" icon="ph:laptop" href="/quickstarts/connect-a-local-model/">
+    Install the connector, expose a local server through the tunnel, and add it as a model.
+  </Card>
+</CardGrid>
+
+## The three surfaces
+
+| Surface | Where | What it is for |
+| --- | --- | --- |
+| Console | [noket.dev](https://noket.dev) | Models, members, budgets, API keys, usage, logs, and tunnel nodes. |
+| API | `https://api.noket.dev` | OpenAI- and Anthropic-compatible inference endpoints. |
+| Connector | `noket`, `noketd` on your machine | Keeps the tunnel open and serves the upstreams you expose. |
+
+You only need the connector if you are sharing a model that runs on your own hardware. Using someone
+else's model, or sharing a public API, needs nothing but the console and an API key.
+
+## How the pieces fit
+
+- A **model** is the callable unit. It has a public id such as `alice/llama-3`, a price, access rules,
+  and limits. People call the model, never the thing behind it.
+- An **upstream** is an API the connector can reach from your machine: a local runtime, a corporate
+  gateway, or a hosted provider. An **upstream model id** is one model on that API.
+- A **node** is a machine running the connector. Models bound to a node reach their upstream through the
+  tunnel the connector opens, so nothing on your network accepts inbound connections.
+
+Read [Models and access](/concepts/models/) for the vocabulary, or
+[How the tunnel works](/concepts/how-the-tunnel-works/) for the connection itself.
+
+## Next
+
+- [Console](/console/) — every page of the web console.
+- [API](/api/) — routes, authentication, and SDK examples.
+- [Connector](/connector/) — installing, logging in, and managing upstreams.
+- [Reference](/reference/cli/) — the CLI and configuration reference, generated from the code.

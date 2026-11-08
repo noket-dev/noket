@@ -1,0 +1,138 @@
+---
+title: Troubleshooting
+description: Common symptoms and what they mean.
+sidebar:
+  order: 100
+---
+
+Start with `noket status` and the log at `~/.noket/noketd.log`. Between them they say whether you are
+logged in, whether the connector is running, which node it registered, and the last error it saw.
+
+```bash
+noket status
+tail -n 50 ~/.noket/noketd.log
+```
+
+## The connector
+
+### `not logged in, run noket login first`
+
+The connector has no credentials. Run [`noket login`](/connector/login/). If you just logged in and the
+connector is already running, restart it: credentials are read at startup.
+
+### `noketd is already running (pid N); not starting a second instance`
+
+A connector, background or supervised, already holds the tunnel. Nothing is wrong. Use `noket status` to
+confirm, and stop it before starting another. If you expected no connector, a supervisor probably started
+one — see [Run as a service](/connector/run-as-service/).
+
+### `noketd is not running`
+
+`noket down` found nothing to stop. Under a supervisor this is normal: stop the unit or task instead.
+
+### The connector exits, and a supervisor restarts it forever
+
+Look at `noketd.log` for the reason. A common one is a configuration file that no longer parses; fix the
+reported line, and the next start succeeds. Another is a login that was removed: run `noket login`.
+
+### `noket logout` refuses to run
+
+`logout` stops when a connector is running, because the connector would keep using the old login. Stop the connector
+or its supervisor first.
+
+## The tunnel
+
+### The node shows offline in the console
+
+The connector is not connected. Check that the process is running (`noket status`), that the machine has
+network access, and that `tunnel.url` in `config.toml` is correct. The connector retries with backoff up to
+about a minute, so a brief outage recovers on its own.
+
+### A model in the console has no node or upstream models
+
+The node has not reported the upstream, or you are looking at a different node. Run
+[`noket upstream list`](/reference/cli/upstream/list/) on the machine, confirm the node name matches, and
+reload the console. Upstreams added from the console need the node to be online.
+
+### `404 model_not_found`
+
+The `model` in the request does not match any id an upstream lists. Model ids are case-sensitive and must
+match exactly. Compare the request with `noket upstream list`. If the id is listed but requests still
+fail, the node may be serving an older `config.toml`; check `noket status` and the log.
+
+### Requests fail while the node is offline
+
+Requests are not queued. A call made while the node is offline fails, and the client should retry later.
+Noket does not retry or fail over between upstreams.
+
+## Upstreams
+
+### `connect to upstream "x": …` or a probe timeout
+
+The server is not reachable from the machine: wrong host or port, server not started, or a firewall
+between them. Probe from the same machine:
+
+```bash
+curl -sS http://127.0.0.1:11434/v1/models
+```
+
+A probe times out after 10 seconds and reads at most 1 MiB.
+
+### Upstream answers `401` or `403`
+
+The key is missing, wrong, or not valid for that server. Re-enter it with
+[`noket upstream edit`](/reference/cli/upstream/edit/) and `--api-key-stdin`. For an Anthropic-protocol
+upstream, check that the server expects `x-api-key`; for OpenAI, `Authorization: Bearer`.
+
+### `the Base URL changed; provide a new API key, or use --clear-api-key…`
+
+Changing an upstream's address requires a decision about its key, so a key issued for one host is not
+silently sent to another. Pass a new key, or pass `--clear-api-key` if the new address needs none.
+
+### `the upstream list changed on disk`
+
+Something else edited `config.toml` while your command had it open — another command, the console, or an
+editor. Re-run the command; it reads the current file.
+
+### Two upstreams cannot list the same model id
+
+Model ids must be unique across all upstreams on a machine, because the id alone decides which upstream
+serves a request. Rename or remove the duplicate.
+
+## Login
+
+### The browser does not open, or the login page never completes
+
+Copy the URL the command printed to a browser on any device where you are signed in to Noket, and approve
+it there. The request expires after about ten minutes.
+
+### `parse ~/.noket/config.toml: …`
+
+The decoder rejects unknown keys and reports the line. Fix the line; the connector keeps using the previous
+configuration until it parses.
+
+## Console and API
+
+### `401` from the Noket API
+
+The API key is missing, deleted, or wrong. Create or recheck a key on [API keys](/console/api-keys/).
+
+### `403` for one model while others work
+
+Your account's access to that model ended — an invitation expired, the owner revoked it, or the model is
+paused. Ask the owner, or check the model card in the console.
+
+### A budget error
+
+The model or your member limit is exhausted. The error names the limit; the model card shows spent against
+limit and when a periodic limit resets. See [Budgets and limits](/console/models/budget/).
+
+### Usage or cost shows unknown
+
+The gateway did not report usage for those requests. The console shows unknown instead of zero, so totals
+can be lower than expected. Cost figures are for budget control, not invoices.
+
+## Still stuck
+
+Include in a report: the output of `noket --version`, `noket status`, the platform, and the relevant lines
+from `noketd.log`. Remove keys, tokens, and any part of a prompt you do not want to share.

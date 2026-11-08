@@ -1,0 +1,101 @@
+---
+title: Add and manage upstreams
+description: Describe each LLM API the connector can reach, then expose it through the tunnel.
+sidebar:
+  order: 3
+---
+
+An **upstream** is one LLM API that Noket can reach from this machine: its base URL, its protocol
+(OpenAI or Anthropic compatible), its key if it needs one, and the model ids you want to expose.
+
+You need three things before you start:
+
+1. Noket installed and logged in — see [Install](/connector/install/) and [Log in](/connector/login/).
+2. An LLM server running on this machine or on your network, with an HTTP API.
+3. The base URL of that API.
+
+## Add an upstream
+
+```bash
+noket upstream add
+```
+
+The command opens a form. Fill in:
+
+| Field | What to enter |
+| --- | --- |
+| Name | A local label, up to 64 characters: letters, digits, `.`, `_`, `-`. It must be unique. |
+| Protocol | `openai` for OpenAI-compatible servers, `anthropic` for Anthropic-compatible ones. |
+| Base URL | The API root, for example `http://127.0.0.1:11434`. A trailing `/v1` is allowed. |
+| API key | Only if the server requires one. It is read from standard input, never from an argument. |
+| Models | The model ids to expose. The form probes the server and offers a picker. |
+
+After the first field is filled, the form probes `{base_url}/v1/models` and lists what the server
+reports. Select the models you want; typing a model id by hand is also accepted. If the probe fails,
+you can still save the upstream — check the URL and try `noket upstream test` afterwards.
+
+## Add an upstream without prompts
+
+Setting any of `--name`, `--protocol`, `--url`, `--model`, or `--api-key-stdin` switches the command to
+non-interactive mode:
+
+```bash
+noket upstream add \
+  --name ollama \
+  --protocol openai \
+  --url http://127.0.0.1:11434 \
+  --model llama3.2 \
+  --model qwen2.5
+```
+
+`--name`, `--url`, and at least one `--model` are required. For a server that needs a key, pipe it in
+from your secret store:
+
+```bash
+op read "op://Private/vllm/api-key" | noket upstream add --name vllm --url http://127.0.0.1:8000 --model my-model --api-key-stdin
+```
+
+Any command that writes the key to standard output works — `pass show`, `security find-generic-password -w`,
+or the equivalent on your system.
+
+:::caution
+Pass the key on standard input, never as an argument and never inline in a command you keep in your
+shell history. Noket stores it in `config.toml`, which it writes with mode `0600`.
+:::
+
+If an upstream with that name already exists, `noket upstream add` updates it instead of failing.
+
+## Check it
+
+```bash
+noket upstream list
+noket upstream test ollama
+```
+
+`list` shows each upstream's name, protocol, base URL, models, and only whether a key is set.
+`test` probes the API and prints the models it discovers, without sending a generation request.
+
+## Start the tunnel
+
+```bash
+noket up
+```
+
+This starts `noketd` in the background. The command prints the process id, the node id and name, and
+the log path. The node id is generated on the first start and stays with this machine.
+
+The connector now keeps a WebSocket connection open to Noket. Requests that arrive for this node are
+forwarded to the upstream that serves the requested model id.
+
+## Create a model in the console
+
+The tunnel carries requests, but you still need a **model** in the console to call. Go to
+[Models → New model](/console/models/add-model/), choose **Tunnel node** as the source, pick this node,
+and choose one of the upstream model ids you exposed. The console then gives you a model id you can call
+with your [API key](/console/api-keys/).
+
+## Next
+
+- [Run a local server](/connector/local-models/ollama/) — Ollama, vLLM, LM Studio, and Anthropic-compatible servers
+- [Manage upstreams](/reference/cli/upstream/) — every flag of `add`, `edit`, `list`, `test`, and `remove`
+- [How the tunnel works](/concepts/how-the-tunnel-works/)

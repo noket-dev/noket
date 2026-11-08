@@ -1,0 +1,63 @@
+---
+title: vLLM
+description: Expose models served by vLLM through Noket.
+sidebar:
+  order: 2
+---
+
+[vLLM](https://docs.vllm.ai) serves an OpenAI-compatible API, on port `8000` by default.
+
+## Start vLLM
+
+```bash
+vllm serve meta-llama/Llama-3.1-8B-Instruct
+```
+
+Adding `--api-key` to that command makes vLLM require an `Authorization` header. Without it, vLLM
+serves without authentication — acceptable on a machine only you can reach, but not something to
+expose to a network.
+
+## Add the upstream
+
+For a server without a key:
+
+```bash
+noket upstream add --name vllm --protocol openai --url http://127.0.0.1:8000 --model my-model
+```
+
+For a server that requires one, read the key from your secret store and pipe it in:
+
+```bash
+op read "op://Private/vllm/api-key" | noket upstream add \
+  --name vllm \
+  --protocol openai \
+  --url http://127.0.0.1:8000 \
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --api-key-stdin
+```
+
+Then verify and start:
+
+```bash
+noket upstream test vllm
+noket up
+```
+
+## Served model name
+
+vLLM reports the name given by `--served-model-name`, or the Hugging Face id when that flag is absent.
+Use exactly that name as the model id in Noket; a mismatch means requests will not match any upstream.
+
+## Running on a GPU host
+
+It is common to run vLLM on a workstation or a GPU server and Noket on the same host, so the tunnel
+leaves from the machine that has the models. Keep the base URL on `127.0.0.1` and let Noket handle
+the path outward.
+
+Noket allows loopback and private addresses as upstream URLs and does not route them through an HTTP
+proxy, so a local server is never accidentally sent to a corporate proxy.
+
+## Next
+
+- [Create a model in the console](/console/models/add-model/)
+- [Anthropic-compatible servers](/connector/local-models/anthropic-compatible/)

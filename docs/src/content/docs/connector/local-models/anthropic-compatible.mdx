@@ -1,0 +1,56 @@
+---
+title: Anthropic-compatible servers
+description: Expose a server that speaks the Anthropic Messages API.
+sidebar:
+  order: 4
+---
+
+Noket forwards both OpenAI- and Anthropic-shaped requests. Choose the protocol per upstream; a server
+that speaks the Anthropic Messages API uses the `anthropic` protocol.
+
+```bash
+noket upstream add \
+  --name local-anthropic \
+  --protocol anthropic \
+  --url http://127.0.0.1:8080 \
+  --model my-model
+```
+
+## What changes with the `anthropic` protocol
+
+| | `openai` | `anthropic` |
+| --- | --- | --- |
+| Path | `/v1/chat/completions` and related | `/v1/messages` |
+| Key header | `Authorization: Bearer …` | `x-api-key: …` |
+| Model discovery | `GET {base}/v1/models` | `GET {base}/v1/models` |
+
+Probing for models uses `GET {base}/v1/models` regardless of protocol, because that is the endpoint
+servers commonly expose. A server that does not implement it will fail the probe; save the upstream
+anyway and enter model ids by hand.
+
+## Custom headers
+
+Some gateways need extra headers, for example a routing or organization header. There is no
+command-line flag for them; add them in `config.toml`:
+
+```toml
+[[upstreams]]
+name = "gateway"
+protocol = "anthropic"
+base_url = "https://gateway.internal"
+headers = { "X-Route" = "team-a" }
+models = ["claude-model"]
+```
+
+See the [configuration reference](/reference/config/) for every key.
+
+## When to use which protocol
+
+Match the server, not the client. If the server implements `/v1/messages`, use `anthropic`; if it
+implements `/v1/chat/completions`, use `openai`. A proxy that translates between the two should be
+configured with the protocol it exposes, and Noket will not translate anything on its own.
+
+## Next
+
+- [Create a model in the console](/console/models/add-model/)
+- [Configuration file](/reference/config/)

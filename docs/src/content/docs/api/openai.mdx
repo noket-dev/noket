@@ -1,0 +1,119 @@
+---
+title: OpenAI compatibility
+description: Chat completions, legacy completions, responses, and model listing at the OpenAI base URL.
+sidebar:
+  order: 3
+---
+
+Any client that speaks the OpenAI API can call Noket. Set the base URL to
+`https://api.noket.dev/v1`, use a Noket API key, and pass a Noket model id as `model`.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/chat/completions` | Chat completions. |
+| `POST` | `/completions` | Legacy text completions. |
+| `POST` | `/responses` | Responses API. |
+| `GET` | `/models` | Models your key can call. |
+
+## Chat completions
+
+```bash
+curl https://api.noket.dev/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "alice/llama-3.1-8b",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
+```
+
+The response is the model provider's own response body. Noket passes it through rather than wrapping
+it, so the fields your client reads — `choices`, `usage`, tool calls, and so on — are the ones that
+model produces.
+
+## Point an SDK at Noket
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.noket.dev/v1",
+    api_key="YOUR_API_KEY",
+)
+
+response = client.chat.completions.create(
+    model="alice/llama-3.1-8b",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+print(response.choices[0].message.content)
+```
+
+The `openai` SDK reads `OPENAI_BASE_URL` and `OPENAI_API_KEY` from the environment, so an existing
+application can switch by setting both and changing only the model id.
+
+## What Noket checks
+
+Noket validates only what it needs to route the request:
+
+- `model` must be a non-empty string.
+- `stream`, when present, must be a boolean.
+- `messages` must be a non-empty array for chat completions.
+- `prompt` is required for legacy completions.
+- `input` is required for the Responses API.
+
+Everything else is forwarded to the model unchanged. If the provider behind the model does not accept
+a field, the provider rejects the request and Noket returns `400` with `upstream_invalid_request`.
+
+For safety, Noket removes fields that would let a client choose a provider or supply its own
+credentials — `provider`, `providers`, `fallback`, `fallbacks`, `routing`, `route`, `virtual_key`,
+`api_key`, `base_url`, `headers`, `extra_fields`, `_bifrost`, `bifrost`, and headers prefixed
+`x-bf-` or `x-bifrost-`. The model's stored configuration decides those, not the request.
+
+## Streaming
+
+Send `stream: true` as usual. The response is a server-sent event stream of the provider's chunks.
+
+For chat completions, Noket always sets `stream_options.include_usage` on the forwarded request, so the
+last chunk carries `usage` even if the client left it off. A model configured without streaming support
+returns `400` with `stream_not_supported`.
+
+## Response contents
+
+Responses never expose internal routing. Noket:
+
+- replaces the internal model id with the public id;
+- removes provider metadata (`extra_fields`);
+- removes `usage.cost` from the payload — Noket's cost accounting stays in the console;
+- sends `Cache-Control: no-store`.
+
+## List models
+
+```bash
+curl https://api.noket.dev/v1/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "alice/llama-3.1-8b",
+      "object": "model",
+      "created": 1730000000,
+      "owned_by": "alice"
+    }
+  ]
+}
+```
+
+The list contains the models this key can call right now: the account's own active models and the
+models shared with it. Draft and paused models and expired access are not listed. `owned_by` is the
+owner's username, or `noket` when the account has none. The same list is available in the
+[Anthropic format](/api/anthropic/).
+
+## Next
+
+- [Anthropic compatibility](/api/anthropic/)
+- [Errors and limits](/api/errors/)
+- [Examples](/api/examples/)

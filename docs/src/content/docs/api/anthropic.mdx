@@ -1,0 +1,136 @@
+---
+title: Anthropic compatibility
+description: Messages, token counting, and model listing at the Anthropic base URL.
+sidebar:
+  order: 4
+---
+
+The Anthropic SDKs and Claude-style clients can call Noket through the Messages API. The routes are
+served at two equivalent paths, so you can pick the base URL your client expects to append to.
+
+| Base URL | Client appends | Use when |
+| --- | --- | --- |
+| `https://api.noket.dev/anthropic` | `/v1/messages` | The SDK takes a base URL and adds `/v1/...` itself, which the Anthropic SDK does. |
+| `https://api.noket.dev` | `/v1/messages` | The client wants the provider's own path. |
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/v1/messages` | Messages. |
+| `POST` | `/v1/messages/count_tokens` | Token counting. |
+| `GET` | `/anthropic/v1/models` or `/anthropic/models` | Models your key can call. |
+
+## Send a message
+
+```bash
+curl https://api.noket.dev/anthropic/v1/messages \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "alice/llama-3.1-8b",
+    "max_tokens": 256,
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
+```
+
+```python
+from anthropic import Anthropic
+
+client = Anthropic(
+    base_url="https://api.noket.dev/anthropic",
+    api_key="YOUR_API_KEY",
+)
+
+message = client.messages.create(
+    model="alice/llama-3.1-8b",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Hello"}],
+)
+print(message.content[0].text)
+```
+
+A bearer token is also accepted where an Anthropic client sends `x-api-key`; if both headers are
+present, `x-api-key` wins. See [Authentication](/api/authentication/).
+
+## Request handling
+
+Noket requires `model` and a non-empty `messages` array, and forwards the rest of the body to the
+model unchanged: `system`, `max_tokens`, `temperature`, `tools`, `stream`, and the other Messages
+fields behave as the provider implements them. The same routing and credential fields are stripped as
+on the OpenAI routes, so a request cannot choose a provider or supply a key.
+
+The response is the provider's Messages response. Noket replaces the internal model id with the public
+id and removes internal metadata; `usage` keeps its token counts but not Noket's cost.
+
+## Streaming
+
+Send `stream: true`. Noket passes the Messages event stream through: `message_start`,
+`content_block_delta`, `message_stop`, and the rest. A model configured without streaming support
+returns `400` with `stream_not_supported`.
+
+An error after the stream has started ends the stream; the HTTP status is already `200`, so read the
+error event instead of the status code.
+
+## Count tokens
+
+```bash
+curl https://api.noket.dev/anthropic/v1/messages/count_tokens \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "alice/llama-3.1-8b",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
+```
+
+Token counting runs no generation and costs nothing against a budget. The reply is the provider's
+`{"input_tokens": ...}` body.
+
+## List models
+
+```bash
+curl https://api.noket.dev/anthropic/v1/models \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+```json
+{
+  "data": [
+    {
+      "type": "model",
+      "id": "alice/llama-3.1-8b",
+      "display_name": "Llama 3.1 8B",
+      "created_at": "2025-03-04T09:12:00.000Z"
+    }
+  ],
+  "has_more": false,
+  "first_id": "alice/llama-3.1-8b",
+  "last_id": "alice/llama-3.1-8b"
+}
+```
+
+The catalog fits in one page, so `has_more` is always `false`. `display_name` is the model's name in
+the console — the name its owner gave it, not the provider's model name.
+
+## Errors
+
+Anthropic routes use the Anthropic error envelope:
+
+```json
+{
+  "type": "error",
+  "error": {
+    "type": "rate_limit_error",
+    "message": "Your traffic quota has been exceeded."
+  }
+}
+```
+
+See [Errors and limits](/api/errors/) for the statuses and messages both dialects can return.
+
+## Next
+
+- [OpenAI compatibility](/api/openai/)
+- [Errors and limits](/api/errors/)
+- [Examples](/api/examples/)

@@ -1,0 +1,177 @@
+---
+title: Examples
+description: Copy-ready calls with curl and the OpenAI and Anthropic SDKs.
+sidebar:
+  order: 6
+---
+
+Replace `YOUR_API_KEY` with a key from [API keys](https://noket.dev/api-keys) and `alice/llama-3.1-8b`
+with a model id from your account. Model ids are `owner/slug`.
+
+## Chat completion
+
+```bash
+curl https://api.noket.dev/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "alice/llama-3.1-8b",
+    "messages": [
+      {"role": "system", "content": "You are a concise assistant."},
+      {"role": "user", "content": "Why is the sky blue?"}
+    ],
+    "temperature": 0.2
+  }'
+```
+
+## OpenAI Python
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.noket.dev/v1",
+    api_key="YOUR_API_KEY",
+)
+
+response = client.chat.completions.create(
+    model="alice/llama-3.1-8b",
+    messages=[{"role": "user", "content": "Why is the sky blue?"}],
+)
+
+print(response.choices[0].message.content)
+print(response.usage)
+```
+
+## OpenAI Node
+
+```ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://api.noket.dev/v1",
+  apiKey: "YOUR_API_KEY",
+});
+
+const response = await client.chat.completions.create({
+  model: "alice/llama-3.1-8b",
+  messages: [{ role: "user", content: "Why is the sky blue?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## Streaming
+
+```python
+stream = client.chat.completions.create(
+    model="alice/llama-3.1-8b",
+    messages=[{"role": "user", "content": "Count to five."}],
+    stream=True,
+)
+
+for chunk in stream:
+    if chunk.choices and chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="", flush=True)
+```
+
+The usage chunk arrives last and has no choices, so guard the access as above. The same event stream
+works with `curl -N`:
+
+```bash
+curl -N https://api.noket.dev/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "alice/llama-3.1-8b",
+    "messages": [{"role": "user", "content": "Count to five."}],
+    "stream": true
+  }'
+```
+
+## Anthropic Python
+
+```python
+from anthropic import Anthropic
+
+client = Anthropic(
+    base_url="https://api.noket.dev/anthropic",
+    api_key="YOUR_API_KEY",
+)
+
+message = client.messages.create(
+    model="alice/llama-3.1-8b",
+    max_tokens=512,
+    messages=[{"role": "user", "content": "Why is the sky blue?"}],
+)
+
+print(message.content[0].text)
+```
+
+Streaming uses the SDK's helper, which handles the event types for you:
+
+```python
+with client.messages.stream(
+    model="alice/llama-3.1-8b",
+    max_tokens=512,
+    messages=[{"role": "user", "content": "Count to five."}],
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+```
+
+## List the models you can call
+
+```bash
+curl https://api.noket.dev/v1/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python
+for model in client.models.list():
+    print(model.id)
+```
+
+```python
+from anthropic import Anthropic
+
+anthropic = Anthropic(
+    base_url="https://api.noket.dev/anthropic",
+    api_key="YOUR_API_KEY",
+)
+
+for model in anthropic.models.list():
+    print(model.id, model.display_name)
+```
+
+## Count tokens
+
+```python
+count = anthropic.messages.count_tokens(
+    model="alice/llama-3.1-8b",
+    messages=[{"role": "user", "content": "Why is the sky blue?"}],
+)
+print(count.input_tokens)
+```
+
+Token counting is free and does not touch a budget.
+
+## Point an existing application at Noket
+
+Most clients need three changes:
+
+1. The base URL — `https://api.noket.dev/v1` for OpenAI-shaped clients, or
+   `https://api.noket.dev/anthropic` for Anthropic-shaped ones.
+2. The key — a Noket API key in place of the provider key.
+3. The model id — the public `owner/slug` id instead of a provider model name.
+
+Both official SDKs read the base URL and key from their constructor or from the environment variables
+they already support. Supply the key from your process's secret manager rather than a committed file,
+and keep the placeholder out of shell history when you try a call by hand. See
+[Authentication](/api/authentication/) for key handling.
+
+## Next
+
+- [Errors and limits](/api/errors/)
+- [OpenAI compatibility](/api/openai/)
+- [Anthropic compatibility](/api/anthropic/)

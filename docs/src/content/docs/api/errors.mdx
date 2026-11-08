@@ -1,0 +1,96 @@
+---
+title: Errors and limits
+description: The error envelopes, statuses, and messages each dialect returns.
+sidebar:
+  order: 5
+---
+
+Each dialect reports failures in its own error shape. The OpenAI routes return an `error` object; the
+Anthropic routes return a `type: "error"` envelope. The status code means the same thing in both.
+
+## Error bodies
+
+```json
+{
+  "error": {
+    "message": "The model does not exist or you do not have access to it.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_found"
+  }
+}
+```
+
+```json
+{
+  "type": "error",
+  "error": {
+    "type": "not_found_error",
+    "message": "The model does not exist or you do not have access to it."
+  }
+}
+```
+
+OpenAI bodies carry `code`; Anthropic bodies carry only `type` and `message`. Match on the status and
+message, not on an exact type string, when you need code that works across both.
+
+## Statuses
+
+| Status | OpenAI `code` | Anthropic `type` | Message | Cause |
+| --- | --- | --- | --- | --- |
+| `400` | `invalid_model` | `invalid_request_error` | `"model" must be a non-empty string.` | The body has no usable `model`. |
+| `400` | `invalid_stream` | `invalid_request_error` | `"stream" must be a boolean.` | `stream` was not a boolean. |
+| `400` | `invalid_messages` | `invalid_request_error` | `"messages" must be a non-empty array.` | Chat or Messages request without messages. |
+| `400` | `invalid_prompt` | `invalid_request_error` | `"prompt" is required.` | Legacy completions request without a prompt. |
+| `400` | `invalid_input` | `invalid_request_error` | `"input" is required.` | Responses request without an input. |
+| `400` | `stream_not_supported` | `invalid_request_error` | `This model does not support streaming responses.` | `stream: true` on a model configured without streaming. |
+| `401` | `invalid_api_key` | `authentication_error` | `Missing API key.` or `Incorrect API key provided.` | No key, or a key that is unknown or deleted. |
+| `404` | `model_not_found` | `not_found_error` | `The model does not exist or you do not have access to it.` | Wrong id, paused or draft model, or access that ended. |
+| `429` | `rate_limit_exceeded` | `rate_limit_error` | `Rate limit exceeded for this model.` | The model's rate limit, protection at Noket, or a budget the gateway refuses. |
+| `429` | `insufficient_quota` | `rate_limit_error` | `Your traffic quota has been exceeded.` | The model's traffic (byte) quota is used up. |
+| `500` | `internal_error` | `api_error` | `Internal server error.` | Noket failed before or after the provider call. |
+| `502` | `upstream_error` | `api_error` | `The upstream provider failed to complete the request.` | The provider returned an error Noket cannot attribute more precisely. |
+| `502` | `upstream_auth_error` | `api_error` | `The upstream provider rejected the model credentials.` | The provider refused the stored key or account. |
+| `504` | `upstream_timeout` | `timeout_error` | `The upstream provider did not respond in time.` | The provider did not answer within the model's timeout. |
+
+A `429` from an exhausted budget and one from a rate limit share the message `Rate limit exceeded for
+this model.` The console distinguishes them: [Usage](/console/usage/) shows spend against each
+budget, and the model page shows its current state.
+
+## How upstream failures are mapped
+
+When the provider behind a model fails, Noket translates its status instead of forwarding its body.
+Provider messages, credentials, and internal model names never reach the client.
+
+| Provider response | Noket returns |
+| --- | --- |
+| `400` | `400` with `upstream_invalid_request` |
+| `401` or `403` | `502` with `upstream_auth_error` |
+| `404` | `404` with `model_not_found` |
+| `429` | `429` with `rate_limit_exceeded` |
+| Timeout | `504` with `upstream_timeout` |
+| Anything else | `502` with `upstream_error` |
+
+An `upstream_auth_error` almost always means the model's credentials need attention in the console or,
+for a tunnel model, that the connector holding the key is offline or misconfigured. Ask the model's owner;
+if that is you, check the upstream in `noket upstream test`.
+
+## Errors during a stream
+
+Once a response has started streaming, the status is already `200` and cannot change. If the provider
+fails mid-stream, the stream ends, and the provider's error event arrives in the stream. Treat an
+incomplete stream — missing `[DONE]`, or an error event — as a failed call. The request appears in the
+model's [Logs](/console/logs/), though a failed or cancelled stream may have no reported cost.
+
+## Retries
+
+Safe retry statuses are `429`, `502`, `503`, `504`, and connection failures. Use exponential backoff
+with jitter. Do not retry `400`, `401`, or `404` unchanged — the same request will fail again. A
+streamed request is not safe to retry after partial output unless the client can drop the partial
+response.
+
+## Next
+
+- [Examples](/api/examples/)
+- [Budgets and limits](/console/models/budget/)
+- [Troubleshooting](/troubleshooting/)

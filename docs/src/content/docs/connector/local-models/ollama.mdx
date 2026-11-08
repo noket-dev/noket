@@ -1,0 +1,66 @@
+---
+title: Ollama
+description: Expose models served by Ollama through Noket.
+sidebar:
+  order: 1
+---
+
+[Ollama](https://ollama.com) serves models over an OpenAI-compatible API on port `11434`.
+
+## Start Ollama
+
+```bash
+ollama serve
+ollama pull llama3.2
+```
+
+`ollama serve` runs in the foreground. On macOS and Windows the Ollama app already runs it for you.
+
+## Add the upstream
+
+Ollama usually needs no key. Replace the model ids with the ones you pulled:
+
+```bash
+noket upstream add \
+  --name ollama \
+  --protocol openai \
+  --url http://127.0.0.1:11434 \
+  --model llama3.2 \
+  --model qwen2.5
+```
+
+Both `http://127.0.0.1:11434` and `http://127.0.0.1:11434/v1` work as the base URL; Noket does not
+duplicate the `/v1` when it probes for models.
+
+Then:
+
+```bash
+noket upstream test ollama
+noket up
+```
+
+## Model ids
+
+Use the same names you would pass to `ollama run`, including any tag: `llama3.2`, `qwen2.5:7b`,
+`nomic-embed-text`. Ollama reports these names in its model list, so the picker in `noket upstream add`
+lists them directly.
+
+## If Ollama runs on another machine
+
+Point the base URL at that machine, for example `http://192.168.1.20:11434`, and make sure Ollama
+listens on more than loopback:
+
+```bash
+OLLAMA_HOST=0.0.0.0:11434 ollama serve
+```
+
+Only do this on a network you trust. Ollama has no authentication by default, so anything that can
+reach the port can use the models.
+
+If you would rather not expose Ollama directly, run Noket on the machine that hosts Ollama and keep
+the base URL on loopback.
+
+## Next
+
+- [Create a model in the console](/console/models/add-model/)
+- [Probing and model discovery](/concepts/probing-and-model-discovery/)

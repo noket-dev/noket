@@ -1,0 +1,59 @@
+---
+title: Budgets and limits
+description: Limit spending, tokens, and requests for a model and for each member.
+sidebar:
+  order: 5
+---
+
+Limits keep a model from consuming more than you intend. There are two levels: the model as a whole,
+and each member's access to it.
+
+## Where to set them
+
+- **Model total** — on the model's **Quota** tab.
+- **Per member** — in the **Members** dialog when adding, inviting, or editing a member.
+
+A limit left blank means no limit for that item. An empty budget does not mean zero; it means
+unbounded.
+
+## Kinds of limit
+
+| Limit | Unit | Notes |
+| --- | --- | --- |
+| Budget | USD | Based on reported request cost, not recomputed from the model's prices. |
+| Tokens | tokens | Counts input and output tokens. |
+| Requests | requests | Counts inference requests. |
+
+Each limit has its own period. When a period ends, its counters start again; the console shows the
+reset time when a period is in use. A model's limits apply on top of the limits of each member: a
+member's budget is not a separate balance, but an additional ceiling. A request must fit within both.
+
+## Call protection
+
+The **Quota** tab also lists concurrency, request rate, and maximum output for the model. These are
+separate from budgets: they bound how a request is served rather than how much it may cost.
+
+## Changing limits
+
+Lowering a limit does not clear what has already been spent, and raising one does not reset a counter.
+If a budget is already exhausted, raising the budget takes effect immediately; requests are accepted
+again as soon as the new limit leaves room.
+
+## When a limit is reached
+
+- Requests are refused once a limit is reached, with a `429` response.
+- The model card and the detail page show spent against limit; the progress bar turns red at the limit
+  and yellow as it approaches.
+- For a periodic limit, the page shows when the period resets.
+- If the gateway does not report a cost or usage figure, the console shows it as unknown rather than
+  zero, so a missing number never looks like free usage.
+
+## Usage reporting is per model
+
+Each model's limits are independent, even when two models point at the same upstream server or account.
+Spending on one does not count against another.
+
+## Next
+
+- [Usage](/console/usage/)
+- [Logs](/console/logs/)

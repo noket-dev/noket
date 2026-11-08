@@ -1,0 +1,62 @@
+---
+title: Probing and model discovery
+description: How Noket asks an upstream which models it serves, and what it does not do.
+sidebar:
+  order: 4
+---
+
+When you add an upstream interactively, Noket asks the server which models it serves so you can pick
+from a list instead of typing ids. The same probe backs `noket upstream test` and the console's
+Add upstream form.
+
+## The request
+
+The probe is a `GET` to `{base_url}/v1/models`.
+
+- A base URL that already ends in `/v1` is not given a second one.
+- The request uses the upstream's key and headers, so a protected server answers the same way it would
+  for a real call.
+- It times out after 10 seconds and reads at most 1 MiB of the response body.
+
+## Reading the answer
+
+Different servers describe their models differently, and Noket handles the two common shapes:
+
+- OpenAI-style: `{"data": [{"id": "..."}, ...]}`.
+- Ollama's legacy list: `{"models": [{"name": "...", "model": "..."}]}`.
+
+What the probe returns is a list of model id strings. The picker shows those ids; selecting one adds it
+to the upstream's model list.
+
+## What a probe is not
+
+- **It is not a generation test.** No prompt is sent, no tokens are billed by your provider beyond any
+  list request, and the model's quality is not checked.
+- **It does not write anything.** A probe from `noket upstream test` or from the console's form does not
+  change `config.toml`. Only saving does.
+- **It does not prove calls will work.** A server can list a model and still fail a completion, for
+  example when the model is not loaded or the account lacks access.
+
+## When the probe fails
+
+A failing probe does not block you from saving. The form lets you save and type model ids by hand, which
+is what you need when:
+
+- the server does not implement `/v1/models`;
+- the server requires a key you have not entered yet;
+- the server is temporarily down but you want to configure it now;
+- you want to expose an id the list endpoint omits.
+
+If the probe succeeds but a call later fails with `model_not_found`, the id in the request does not
+match any id an upstream lists. Compare it with `noket upstream list`.
+
+## Console versus CLI probing
+
+Both ask the node's connector to make the request, so the probe runs from the machine that can reach the
+server, not from the cloud. The console's form can probe with a key you have typed but not saved; when
+you edit an upstream and leave the key blank while keeping the base URL, it reuses the stored key.
+
+## Next
+
+- [Upstreams](/concepts/upstreams/)
+- [`noket upstream test`](/reference/cli/upstream/test/)
