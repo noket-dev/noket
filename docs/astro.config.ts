@@ -12,7 +12,7 @@ const nimbusConfig = defineNimbusConfig({
   // Same title as the web app's <title>, so the two tabs read alike. Nimbus
   // drops the suffix when a page's title already equals it (the homepage).
   title: "Noket - AI, Yours to Share.",
-  description: "Share and use AI models with the people you choose.",
+  description: "Share your LLM with everyone. From your machine, to anywhere.",
   locale: "en",
   github: "https://github.com/noket-dev/noket",
   socialImageAlt: "Noket documentation preview",

@@ -22,7 +22,7 @@ docs/
 ├── src/components/             Nimbus UI components from the scaffold
 ├── src/layouts/, src/pages/    page shell, routes, generated OG/llms.txt endpoints
 ├── src/styles/                 Tailwind and prose styles
-├── public/                     static assets, including CNAME
+├── public/                     static assets
 ├── astro.config.ts             site metadata and sidebar
 ├── nimbus.json                 Nimbus scaffold metadata
 └── package.json
@@ -73,5 +73,5 @@ required.
 ## Deployment
 
 `.github/workflows/docs.yml` checks the generated pages, lints and typechecks the site on every pull
-request that touches the docs or the generator, and deploys `main` to GitHub Pages. `public/CNAME`
-pins the custom domain. The Pages source must be set to GitHub Actions in the repository settings.
+request that touches the docs or the generator, and deploys `main` to GitHub Pages. The Pages source
+must be set to GitHub Actions in the repository settings.
