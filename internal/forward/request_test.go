@@ -48,15 +48,13 @@ func TestFilterRequestHeaders(t *testing.T) {
 		{Name: "Host", Value: "example.com"},
 		{Name: "Content-Length", Value: "12"},
 		{Name: "X-Api-Key", Value: "cloud-key"},
-		{Name: "X-Bf-Trace", Value: "abc"},
-		{Name: "X-Bifrost-Request", Value: "1"},
 		{Name: "Connection", Value: "keep-alive"},
 		{Name: "Content-Type", Value: "application/json"},
 		{Name: "X-Custom", Value: "kept"},
 	}
 	got := forward.FilterRequestHeaders(in)
 
-	for _, dropped := range []string{"Authorization", "Host", "Content-Length", "X-Api-Key", "X-Bf-Trace", "X-Bifrost-Request", "Connection"} {
+	for _, dropped := range []string{"Authorization", "Host", "Content-Length", "X-Api-Key", "Connection"} {
 		if values := got.Values(dropped); len(values) != 0 {
 			t.Errorf("%s survived filtering: %v", dropped, values)
 		}

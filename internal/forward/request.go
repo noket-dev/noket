@@ -54,8 +54,8 @@ func ExtractModel(body []byte) (string, error) {
 }
 
 // FilterRequestHeaders keeps business headers and drops hop-by-hop headers,
-// the tunnel's node token and Bifrost-internal headers. Local credentials are
-// injected afterwards.
+// Host, Content-Length, client credentials and the tunnel's node token. Local
+// credentials are injected afterwards.
 func FilterRequestHeaders(in []*tunnelv1.Header) http.Header {
 	out := make(http.Header, len(in))
 	for _, header := range in {
@@ -69,9 +69,6 @@ func FilterRequestHeaders(in []*tunnelv1.Header) http.Header {
 		}
 		switch lower {
 		case "host", "content-length", "authorization", "x-api-key":
-			continue
-		}
-		if strings.HasPrefix(lower, "x-bf-") || strings.HasPrefix(lower, "x-bifrost-") {
 			continue
 		}
 		out.Add(name, header.Value)
