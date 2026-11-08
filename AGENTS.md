@@ -12,6 +12,10 @@ Applies repo-wide; a package-level `AGENTS.md` takes precedence.
 - `internal/forward`, `internal/probe`, `internal/netguard`, `internal/rpc`: data plane, guards, and the RPC codec.
 - `internal/ui`: the lipgloss palette shared by the CLI and the TUI.
 - `proto/`, `gen/`: contracts and generated Go.
+- `docs/`: the public user documentation (Cloudflare Nimbus on Astro 7, published to docs.noket.dev);
+  see `docs/AGENTS.md`.
+- `tools/docgen`: generates the CLI and configuration reference pages in `docs/` from the command tree and
+  `internal/types`.
 
 ## Rules
 
@@ -28,6 +32,9 @@ Applies repo-wide; a package-level `AGENTS.md` takes precedence.
   never `len`.
 - Never print, echo, log, or commit keys or tokens, never pass them in arguments or environment variables, and
   never show more than whether a key is set.
+- `docs/src/content/docs/reference/cli/**` and `docs/src/content/docs/reference/config.md` are generated;
+  change the command or the structs, run `make docs-generate`, and commit the output. Keep the console pages in
+  `docs/` user-facing: no internal service or RPC names, and no real keys in examples.
 - Tests use the standard library only, isolate with `t.Setenv(config.DirEnv, t.TempDir())`, and use a fake
   `/v1/models` server — never the real `~/.noket` or upstreams.
 
@@ -41,6 +48,8 @@ Applies repo-wide; a package-level `AGENTS.md` takes precedence.
 - Proto: `make proto-lint` and `make generate`.
 - Build without touching `result`: `nix build .#noket --no-link --print-out-paths`.
 - Local daemon: `go run ./cmd/noket up --foreground` (temp `NOKET_CONFIG_DIR` unless running for real).
+- Docs: `make docs-generate`, `make docs-check`, `make docs-lint`, `make docs-typecheck`,
+  `make docs-dev`, `make docs-build`; the site lives in `docs/`.
 
 ## Validation
 
@@ -54,6 +63,10 @@ Applies repo-wide; a package-level `AGENTS.md` takes precedence.
 - After `go.mod`/`go.sum` changes: stage them (the Nix source is `cleanSource`, tracked files only), set
   `vendorHash = pkgs.lib.fakeHash;` in `flake.nix`, run `nix build .#noket`, and paste the `got:` hash back.
   Dependabot pull requests get this from `.github/workflows/vendor-hash.yml`.
+- After CLI command or flag changes, and after `internal/types` field changes: `make docs-generate` and commit
+  the regenerated pages; `make check` reports stale ones.
+- After `docs/` changes: `make docs-check`, `go test ./tools/docgen`, `make docs-lint`,
+  `make docs-typecheck`, and `make docs-build`.
 - Never claim verification without the format check, vet, and tests; say what you skipped.
 
 ## Git

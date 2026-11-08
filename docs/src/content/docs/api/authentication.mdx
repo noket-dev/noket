@@ -1,0 +1,106 @@
+---
+title: Authentication
+description: Create a Noket API key, send it, and understand what it can call.
+sidebar:
+  order: 2
+---
+
+The Noket API authenticates every request with a Noket API key. The key identifies your account; the
+account's access decides which models the key can call.
+
+## Create a key
+
+1. Sign in at [noket.dev](https://noket.dev).
+2. Open [API keys](https://noket.dev/api-keys) and choose **Create key**.
+3. Name it after where it runs, for example `prod-backend` or `laptop`.
+4. Copy the value from the dialog. It is shown once; the console keeps only a masked fragment.
+
+Keys do not expire. They work until you delete them.
+
+## Send the key
+
+Use the header that matches the dialect:
+
+```bash
+# OpenAI-compatible routes
+curl https://api.noket.dev/v1/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```bash
+# Anthropic-compatible routes
+curl https://api.noket.dev/anthropic/v1/models \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+`x-api-key` takes precedence when both headers are present. Noket accepts either header on either
+dialect, so an Anthropic client that sends a bearer token still authenticates.
+
+Keep the key in the client's secret store or environment, out of source control, shell history, and
+logs. The key is sent on every request; Noket stores only a digest of it, so a lost key cannot be
+recovered — delete it and create another.
+
+## What a key can call
+
+A key can call every model the account can call:
+
+- models the account created;
+- models shared with the account while that access is active and has not expired;
+- nothing else. Paused or draft models are refused even to their owner.
+
+There is no per-key model scoping and no per-key spending limit. To separate applications you can use
+separate keys for rotation and revocation; to separate budgets, use separate models or member limits.
+Deleting a key ends requests made with it immediately, while in-flight requests may finish.
+
+## How keys are checked
+
+Noket compares a digest of the presented key against stored digests. A key whose account was deleted,
+or whose access to a model changed, is rejected for that model at once; other models keep working.
+
+The console shows **Last used** for each key. It is a display hint refreshed at most every five
+minutes, so it can lag a recent call.
+
+## The two credentials
+
+| Credential | Used by | Where it is created |
+| --- | --- | --- |
+| API key | Applications calling inference | Console → API keys |
+| Login token | The connector on your machine | `noket login` |
+
+They are independent. Logging out of the console does not revoke an API key, and deleting an API key
+does not sign the connector out.
+
+## Failures
+
+Both a missing key and an unknown key return `401`:
+
+```json
+{
+  "error": {
+    "message": "Missing API key.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_api_key"
+  }
+}
+```
+
+```json
+{
+  "error": {
+    "message": "Incorrect API key provided.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_api_key"
+  }
+}
+```
+
+Anthropic-style routes return the same status with `"type": "authentication_error"` in the error
+object. See [Errors and limits](/api/errors/) for every code.
+
+## Next
+
+- [OpenAI compatibility](/api/openai/)
+- [Anthropic compatibility](/api/anthropic/)
+- [API keys](/console/api-keys/)

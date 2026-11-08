@@ -1,0 +1,61 @@
+---
+title: Usage
+description: Cost, requests, tokens, latency, and per-model totals.
+sidebar:
+  order: 4
+---
+
+[Usage](https://noket.dev/usage) shows what your account has called and what it cost. What you can see
+depends on your role:
+
+- A model owner can view their own usage or the usage of all their models.
+- An admin sees their own usage and that of the members they manage.
+- A member sees only their own usage.
+
+The server enforces this, so filters can only narrow what you already have access to.
+
+## Time range
+
+Choose **Today**, **7 days**, or **30 days**, and optionally narrow to a model. The range changes what
+is counted; it does not reset any budget. Budgets reset on their own periods, shown on the model.
+
+## Key figures
+
+The top of the page summarizes the selected range:
+
+- Cost
+- Requests
+- Tokens
+- Success rate
+- Cache hit rate
+- Average latency
+- End-to-end throughput
+- Cost per request
+
+Below it, the page charts daily activity, token trends stacked by input, cache, and output, the
+composition of tokens and of cost, and the outcome of requests.
+
+## Per-model table
+
+The table at the bottom has one row per model: requests, token breakdown, cost, cache hits, average
+latency, data status, and a trend.
+
+- **Average latency** counts only requests that reported a latency, divided by the number of valid
+  requests.
+- **Unknown** and **partial** data are labelled. A figure the gateway has not reported yet is marked
+  provisional rather than shown as zero.
+
+## How the numbers are counted
+
+- Days follow the **Asia/Singapore** time zone, so a day boundary is not your local midnight.
+- Cost comes from the per-request cost reported by the gateway and is used for budget control. It is not
+  necessarily what a provider will invoice you, and it is not an amount anyone owes.
+- All amounts are in USD.
+- Usage is tracked per model. Two models backed by the same upstream account still have separate
+  totals and separate limits.
+- Filtering by time does not change budget counters. A budget period resets on its own schedule.
+
+## Next
+
+- [Logs](/console/logs/)
+- [Budgets and limits](/console/models/budget/)

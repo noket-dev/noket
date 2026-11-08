@@ -1,0 +1,53 @@
+---
+title: LM Studio
+description: Expose models served by LM Studio through Noket.
+sidebar:
+  order: 3
+---
+
+[LM Studio](https://lmstudio.ai) can serve loaded models over an OpenAI-compatible API from its local
+server, on port `1234` by default.
+
+## Start the local server
+
+In LM Studio, open the **Developer** tab, load a model, and start the server. The server page shows the
+base URL, usually `http://127.0.0.1:1234`.
+
+If you turned on API-key protection in LM Studio, keep that key at hand; otherwise the server accepts
+requests without one.
+
+## Add the upstream
+
+```bash
+noket upstream add \
+  --name lmstudio \
+  --protocol openai \
+  --url http://127.0.0.1:1234 \
+  --model <model-id>
+```
+
+The model id is the identifier LM Studio shows in the server's model list, which is usually the name of
+the loaded model. The quickest way to get it right is the interactive form, which reads the list from
+the server and lets you pick:
+
+```bash
+noket upstream add
+```
+
+Then verify and start:
+
+```bash
+noket upstream test lmstudio
+noket up
+```
+
+## Keep the server running
+
+LM Studio stops its server when you quit the app, so the upstream works only while LM Studio is open.
+If you want your models available whenever the machine is on, use a server that runs as a service —
+vLLM or Ollama — or keep LM Studio running in the background.
+
+## Next
+
+- [Create a model in the console](/console/models/add-model/)
+- [vLLM](/connector/local-models/vllm/)

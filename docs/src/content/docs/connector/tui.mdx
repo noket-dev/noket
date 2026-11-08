@@ -1,0 +1,64 @@
+---
+title: Use the terminal UI
+description: Manage upstreams and the connector from a full-screen terminal interface.
+sidebar:
+  order: 4
+---
+
+`noket tui` opens a terminal interface for the same work the commands do: listing upstreams, testing
+them, and starting or stopping the connector.
+
+```bash
+noket tui
+```
+
+The command needs an interactive terminal. Run it directly in your terminal rather than through a
+script or a pipe.
+
+## Keys
+
+| Key | Action |
+| --- | --- |
+| `a` | Add an upstream |
+| `e` | Edit the selected upstream |
+| `t` | Test the selected upstream |
+| `d` | Remove the selected upstream |
+| `u` | Start the connector |
+| `x` | Stop the connector |
+| `r` | Refresh |
+| `enter` | Open details for the selected upstream |
+| `q`, `ctrl+c` | Quit |
+| `esc` | Close the open popup or form |
+
+## Forms and the model picker
+
+The add and edit forms are the same ones the commands use. After you enter a base URL, the form probes
+the server and opens a model picker:
+
+- `space` toggles the highlighted model.
+- `/` starts filtering; type to narrow the list.
+- `up` and `down` move between entries.
+- `enter` confirms the selection.
+- `esc` cancels and returns to the form.
+
+Upstream changes are written to `config.toml` as soon as you confirm them. They do not need a restart
+of the connector; it picks the file up on its next heartbeat.
+
+## When to use the TUI
+
+The TUI is a convenience for interactive use. Anything it does has a command equivalent, which is what
+you want in scripts, remote sessions, and documentation:
+
+| TUI action | Command |
+| --- | --- |
+| Add | `noket upstream add` |
+| Edit | `noket upstream edit <name>` |
+| Test | `noket upstream test <name>` |
+| Remove | `noket upstream remove <name>` |
+| Start | `noket up` |
+| Stop | `noket down` |
+
+## Next
+
+- [CLI reference](/reference/cli/)
+- [Manage upstreams](/reference/cli/upstream/)

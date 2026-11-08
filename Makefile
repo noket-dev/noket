@@ -13,7 +13,7 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 GO_SOURCES := $(shell find . -name '*.go' -not -path './gen/*' -not -path './bin/*')
 
-.PHONY: all build build-local run test test-race lint fmt fmt-check proto-lint generate check clean
+.PHONY: all build build-local run test test-race lint fmt fmt-check proto-lint generate check clean docs-generate docs-check docs-install docs-dev docs-lint docs-typecheck docs-build
 
 all: build
 
@@ -51,7 +51,33 @@ generate:
 	rm -rf gen
 	$(DEV) buf generate --template buf.gen.yaml --path proto/noket/tunnel/v1 --path proto/noket/v1
 
-check: fmt-check lint test
+check: fmt-check lint test docs-check
+
+# Regenerate the CLI and configuration reference from the command tree and the
+# structs in internal/types. The output is committed.
+docs-generate:
+	$(DEV) go run ./tools/docgen
+
+# Fails when a committed reference page is stale; part of `make check`.
+docs-check:
+	$(DEV) go run ./tools/docgen -check
+
+docs-install:
+	cd docs && npm ci
+
+docs-dev:
+	cd docs && npm run dev
+
+# Nimbus authoring rules: frontmatter shape and internal links are errors.
+docs-lint:
+	cd docs && npm run lint:docs
+
+docs-typecheck:
+	cd docs && npm run typecheck
+
+# Builds the static site into docs/dist. Run docs-lint first: it checks links.
+docs-build: docs-generate
+	cd docs && npm run build
 
 clean:
-	rm -rf bin result result-1 result-*
+	rm -rf bin result result-1 result-* docs/dist docs/.astro

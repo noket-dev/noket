@@ -1,0 +1,74 @@
+---
+title: Models
+description: The unit people create, share, call, and pay for.
+sidebar:
+  order: 1
+---
+
+A **model** is the thing Noket manages. It has a public id, an owner, a source, limits, and an audience.
+Everything else in Noket exists to feed a model, serve it, or account for it.
+
+## What a model contains
+
+| Field | Meaning |
+| --- | --- |
+| Name | What people see in their model list. |
+| Slug | The owner-chosen part of the public id. Unique within the owner's account. |
+| Public id | `owner-username/slug`, for example `alice/llama-3.1-8b`. |
+| Source | An external API, or one upstream model id on one tunnel node. |
+| State | Draft, active, or paused. |
+| Price and limits | What a call is charged and how much may be spent. |
+| Members | Accounts that can call it, with their roles and limits. |
+
+## The public id
+
+People call the public id, not the provider's model name. The id is resolved at request time to the
+model's source and then to the internal provider model id. That indirection is what lets a model move
+between sources, or hide which provider and account serve it, without changing what callers send.
+
+The owner may call the bare slug when it is unambiguous. Everyone else, and every shared model, uses
+the qualified `owner/slug` form.
+
+## Sources
+
+A model has exactly one source at a time:
+
+- **External API** — Noket calls an OpenAI- or Anthropic-compatible endpoint with credentials stored
+  for that model. This is how you share a provider account you already have.
+- **Tunnel node** — Noket reaches the model through the connector on a machine you run. The connector holds the
+  upstream configuration and key; Noket never sees them in plaintext and the browser never receives
+  them.
+
+The console shows which source a model uses on its card and under **Overview**. A tunnel model is
+available only while the connector that hosts it is connected.
+
+## One model, one upstream model id
+
+A model binds one public id to one upstream model id. Two models may point at the same server or
+provider account; each has its own limits, usage, members, and price, and spending on one does not
+count against the other.
+
+## State
+
+- **Draft** — created but not callable, even by its owner. Use it to review configuration and test the
+  connection before anyone can call it.
+- **Active** — callable by everyone with access.
+- **Paused** — new requests are refused; access and usage are kept. The owner can resume it.
+
+An expired or exhausted limit is not a state; the model stays active and requests fail until the limit
+resets or is raised.
+
+## Sharing
+
+A model is the only thing shared. Members get access to a model, not to its upstream, its node, or its
+credentials. They call it with their own Noket API key, which also keeps working for their other
+models.
+
+See [Sharing and limits](/concepts/sharing-and-limits/) and
+[Share a model](/console/models/sharing/).
+
+## Next
+
+- [Upstreams](/concepts/upstreams/)
+- [How the tunnel works](/concepts/how-the-tunnel-works/)
+- [Add a model](/console/models/add-model/)

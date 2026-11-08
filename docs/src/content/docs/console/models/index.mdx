@@ -1,0 +1,51 @@
+---
+title: Models
+description: The models you created and the models shared with you.
+sidebar:
+  order: 1
+  label: Overview
+---
+
+[Models](https://noket.dev/models) is the list of everything you can call: models you created and
+models other people shared with you. Each card shows the model's name and slug, its state, its price,
+and — for models you own — its limits.
+
+## Filters and sorting
+
+- **Source** narrows the list to *All models*, *Created by me*, or *Shared with me*.
+- **Search** matches the model name.
+- **Status** narrows to models that are callable or not callable.
+- **Sort** is *Custom order* by default, *Name A–Z*, or *Name Z–A*. Custom order is saved per account,
+  so the arrangement you drag into place is the one you see on another device.
+
+## Cards
+
+A card you own shows its source: an external API base URL, or the tunnel node it is bound to. The
+**Test connection** and **Members** buttons sit on the card; edit, pause or resume, and delete are
+under the more menu.
+
+A shared model is marked **Shared** and shows only its name, slug, state, and price. Its more menu has
+one action: leave the model, which ends your access and removes the card from your list.
+
+## Limits on a card
+
+Cards you own show three limit rows — budget, tokens, and requests — with the used amount against
+each limit and a progress bar. The bar turns yellow as usage approaches the limit and red once the
+limit is reached. Hovering a periodic limit shows when the period resets. A limit you have not set
+shows as unlimited.
+
+## Model states
+
+| State | Meaning |
+| --- | --- |
+| Active | Callable by everyone with access. |
+| Draft | Created but not activated; the owner can review it and test it, but nobody can call it. |
+| Paused | New requests are refused. The owner can resume it. |
+
+If a budget is exhausted, requests are refused until the period resets or the budget is raised; the
+card shows the spent amount and the limit.
+
+## Next
+
+- [Add a model](/console/models/add-model/)
+- [Model details](/console/models/model-detail/)

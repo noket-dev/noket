@@ -1,0 +1,61 @@
+---
+title: Run the connector
+description: The CLI and background process that connect your machine to Noket.
+sidebar:
+  order: 0
+  label: Overview
+---
+
+The Noket connector is the part that runs on the machine with your models. It ships as two binaries:
+
+- `noket` — the command-line client: log in, manage upstreams, start and stop the tunnel, and inspect
+  what is happening.
+- `noketd` — the background process that keeps the tunnel open, probes upstreams, and forwards
+  inference requests to them.
+
+You need the connector only if Noket should reach a model on your hardware or network. Sharing a public
+API you already have credentials for does not need it.
+
+## The path
+
+1. [Install Noket](/connector/install/) — binaries, `PATH`, completions, and the login item.
+2. [Log in](/connector/login/) — approve the CLI in the browser and store the token on this machine.
+3. [Add and manage upstreams](/connector/upstreams/) — describe each LLM API the connector can reach.
+4. Run `noket up` and create a model in the [console](/console/models/add-model/) bound to this node.
+
+If you already have a server running, the [local model guides](/connector/local-models/) cover Ollama,
+vLLM, LM Studio, and Anthropic-compatible servers.
+
+## How the pieces relate
+
+A **node** is one machine running the connector. Its node id is created on the first start and stays with
+the machine. An **upstream** is an LLM API reachable from that machine. A **model** in the console can
+be bound to one upstream model id on one node; the tunnel connects the two.
+
+The connector holds the upstream keys in [`config.toml`](/reference/files/) on that machine. Noket stores
+them encrypted for external models and never sends a tunnel model's upstream credentials to the
+browser.
+
+## Everyday commands
+
+| Command | Effect |
+| --- | --- |
+| `noket status` | Account, node, connector state, and log path. |
+| `noket up` / `noket down` | Start or stop `noketd` in the background. |
+| `noket upstream list` | Upstreams, their protocols, addresses, and models. |
+| `noket upstream test NAME` | Probe one upstream and list what it serves. |
+| `noket tui` | The same work in a full-screen terminal interface. |
+
+The [CLI reference](/reference/cli/) documents every command and flag.
+
+## Keeping it running
+
+The installers enable the connector at login, so it starts when you sign in and restarts if it fails. If
+you install with `--no-autostart`, you can still run `noket up` yourself or set up supervision later;
+see [Run as a service](/connector/run-as-service/).
+
+## Next
+
+- [Use the terminal UI](/connector/tui/)
+- [How the tunnel works](/concepts/how-the-tunnel-works/)
+- [Security and privacy](/concepts/security-and-privacy/)

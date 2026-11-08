@@ -1,0 +1,31 @@
+---
+title: Sign in
+description: Create an account, verify your email, and accept an invitation.
+sidebar:
+  order: 2
+---
+
+Sign in at [noket.dev/login](https://noket.dev/login) with the email address you want to use for the
+account. Verify the address when the console asks; models, API keys, and usage all belong to the
+account, so an abandoned address means losing access to them.
+
+`noket login` takes you to the same place: it opens the authorization page in your browser and waits
+for you to approve it. That approval needs an existing signed-in session, so sign in first if you have
+not.
+
+## Invitations
+
+If someone shares a model with you, you may receive an invitation link of the form
+`/invite/<token>`. Open it while signed in. The token belongs to the invitation, not to your account,
+and it stops working once used or revoked.
+
+## Sessions
+
+The account page lists the sessions signed in to the console. Sign out of a session you no longer
+recognise. Signing out of the console does not remove the token stored on a machine where you ran
+`noket login`; use [`noket logout`](/connector/login/#log-out) for that machine.
+
+## Next
+
+- [Models](/console/models/)
+- [Account](/console/account/)

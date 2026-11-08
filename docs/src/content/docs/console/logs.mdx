@@ -1,0 +1,52 @@
+---
+title: Logs
+description: Inspect individual requests, their status, cost, and latency.
+sidebar:
+  order: 5
+---
+
+[Logs](https://noket.dev/logs) lists individual inference requests, newest first — the requests behind
+the totals on [Usage](/console/usage/). Every request is one row; there is no grouping or aggregation.
+
+## Filters
+
+The header sets the scope: range, member (when your role allows it), and a date range. The toolbar
+narrows further:
+
+- A text box that matches a full request id, or part of a model's slug or name.
+- A model filter and a status filter, each accepting several values.
+
+All filters live in the URL, so a filtered view can be bookmarked or shared. Changing any filter
+returns to the first page.
+
+Rows are always sorted by time, newest first. The table cannot be sorted by another column, because the
+API does not accept a sort parameter.
+
+## Columns
+
+| Column | Content |
+| --- | --- |
+| Member | Shown when the scope is not just you. |
+| Model | The model slug, with the owning account below it. |
+| Path | The request path; streaming requests are labelled. |
+| Tokens | Hover for the input, cache, and output breakdown. |
+| Cost | Three decimal places; hover for the breakdown. |
+| Latency | Two lines: time to first token and total time. |
+| Status | Success, failure, or cancellation, shown by icon and colour. |
+| Time | When the request arrived. |
+
+Latency figures exist only for requests that reported them. When the gateway reports no cost or usage
+for a request, the row says so instead of showing zero.
+
+## Scope and permissions
+
+- A model owner can see their own requests or those of all their models.
+- An admin can see their own requests and those of the members they manage.
+- A member sees only their own requests.
+
+The server clips the scope before any filter applies, so filters only narrow what you may see.
+
+## Next
+
+- [Usage](/console/usage/)
+- [Account](/console/account/)

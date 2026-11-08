@@ -1,0 +1,51 @@
+---
+title: Platforms
+description: Supported operating systems, architectures, and what the installer sets up on each.
+sidebar:
+  order: 4
+---
+
+## Releases
+
+Release archives cover:
+
+| OS | Architectures |
+| --- | --- |
+| macOS | `amd64`, `arm64` |
+| Linux | `386`, `amd64`, `arm`, `arm64`, `riscv64` |
+| Windows | `386`, `amd64`, `arm64` |
+| FreeBSD | `386`, `amd64`, `arm`, `arm64`, `riscv64` |
+
+Both `noket` and `noketd` are in every archive. They are statically linked and need no runtime
+dependencies.
+
+## Installers
+
+`install.sh` supports macOS, Linux, and the Windows shells it hands off to `install.ps1` from. It
+detects the OS and architecture, downloads the matching archive, and verifies it.
+
+| | macOS | Linux | Windows |
+| --- | --- | --- | --- |
+| Default install directory | `~/.local/bin` | `~/.local/bin` | `%LOCALAPPDATA%\Programs\noket` |
+| Connector at login | launchd user agent `dev.noket.connector` | systemd user unit `noket.service` | Scheduled Task `Noket` |
+| Completions | bash, zsh, fish | bash, zsh, fish | PowerShell |
+| Config directory | `~/.noket` | `~/.noket` | `%USERPROFILE%\.noket` |
+
+FreeBSD has release archives but no installer script. Unpack the archive, put both binaries on `PATH`,
+and run [`noket up --foreground`](/reference/cli/up/) under whatever supervisor the system uses.
+
+## Differences that matter
+
+- **Signals.** `noket down` sends the connector a termination request. Under a supervisor, stop the unit or
+  task instead; the connector exits cleanly on the supervisor's signal.
+- **Permissions.** Unix permissions (`0700` directory, `0600` files) are replaced by the user's ACL on
+  Windows.
+- **Interactive output.** Colour and styled tables need a terminal that supports them. `NO_COLOR` and
+  `TERM=dumb` turn them off; `noket tui` needs a real terminal everywhere.
+- **Lingering.** On Linux, a systemd user unit stops when the last session ends unless you enable
+  lingering. See [Run as a service](/connector/run-as-service/).
+
+## Next
+
+- [Install](/connector/install/)
+- [Run as a service](/connector/run-as-service/)

@@ -1,0 +1,80 @@
+---
+title: Share your models
+description: Turn a model into something other people can call, with a budget and an expiry.
+sidebar:
+  order: 3
+---
+
+Sharing starts with a model. A model is one callable thing: it has a public id, a price, and its own
+budget. You can back it with a public API you already have a key for, or with an upstream on a machine
+where you run the connector. Either way, people call the model, not the API behind it.
+
+## Before you start
+
+- A Noket account at [noket.dev](https://noket.dev).
+- For an external model: the API base URL, key, and model name, and a public `https` or `http`
+  endpoint.
+- For a model on your machine: the connector installed and running, with an upstream configured. Follow
+  [Connect a local model](/quickstarts/connect-a-local-model/) first.
+
+## 1. Create the model
+
+Open [Models](https://noket.dev/models) and choose **Add model**. Pick a source:
+
+- **External API** — enter the API format (`openai` or `anthropic`), base URL, key, and model name.
+  **Test connection** checks them without saving.
+- **Tunnel node** — pick an online node and one of the upstream model ids it reports. The protocol,
+  base URL, and key come from the node.
+
+Then set the name and slug. The public id is `your-username/your-slug`; people pass that as `model`.
+Add prices if you want cost reporting to reflect what the provider charges. Prices are informational —
+request cost comes from the gateway's usage data.
+
+See [Add a model](/console/models/add-model/) for every field, including the advanced settings.
+
+## 2. Set a budget
+
+You are paying for the requests your members make, so set a limit before you share. On the model's
+**Quota** tab, set the model-wide amount budget, token limit, and request limit, each with its own
+period. Leaving one blank means no limit for that item.
+
+Start with the total you are willing to spend, then give each member a smaller slice in the next step.
+See [Budgets and limits](/console/models/budget/) for how periods, concurrency, and resets work.
+
+## 3. Add people
+
+Open the **Members** dialog from the model card or the model page.
+
+- **Add member** for an account that already exists. Enter a username or email, choose the role
+  (Admin or Member), an access expiry, and the member's limits.
+- **Invite** to send an email to someone without an account yet. The link is valid for 7 days, and the
+  role, expiry, and limits are stored with the invitation.
+
+**Review** restates what will be committed. Only the owner can grant Admin. Pending invitations can be
+resent, edited, or revoked; resending replaces the link immediately.
+
+See [Share a model](/console/models/sharing/) for the full set of rules.
+
+## 4. Tell them how to call it
+
+Send the model id and the API format. Each person creates their own key on the
+[API keys](https://noket.dev/api-keys) page; an invitation or membership never creates a key for them.
+Their key is account-wide and inherits the access you granted.
+
+Point them at [Use a shared model](/quickstarts/use-a-shared-model/) for the request itself.
+
+## 5. Watch and adjust
+
+[Usage](https://noket.dev/usage) shows cost, requests, tokens, and per-model totals; you can view your
+own usage or all of your models'. [Logs](https://noket.dev/logs) lists individual requests with status,
+cost, and latency.
+
+When someone should stop using the model, remove the member or revoke the invitation. Access ends
+immediately for every key in that account. Their spent amounts are not refunded or cleared. Pausing the
+model stops all new requests but keeps the configuration.
+
+## Next
+
+- [Model details](/console/models/model-detail/)
+- [Budgets and limits](/console/models/budget/)
+- [Sharing and limits](/concepts/sharing-and-limits/)

@@ -44,16 +44,16 @@ message Node {
   google.protobuf.Timestamp created_at = 5;
 }
 
-// Informational machine details reported by the agent on registration. Never
+// Informational machine details reported by the connector on registration. Never
 // used for routing or authorization.
 message NodeConfig {
-  // Runtime platform of the agent host: linux, darwin or windows.
+  // Runtime platform of the connector host: linux, darwin or windows.
   string platform = 1;
 
-  // Runtime architecture of the agent host, for example amd64 or arm64.
+  // Runtime architecture of the connector host, for example amd64 or arm64.
   string arch = 2;
 
-  // Agent build version, for example v0.1.0.
+  // Connector build version, for example v0.1.0.
   string version = 3;
 
   // Host operating system version, kept as one display string because the
@@ -76,7 +76,7 @@ message RegisterNodeRequest {
   // kicks.
   string gateway_id = 4;
 
-  // Reported on every registration. Omitted by agents that do not report it;
+  // Reported on every registration. Omitted by connectors that do not report it;
   // the stored value is then left unchanged.
   NodeConfig config = 5;
 }

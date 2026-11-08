@@ -1,0 +1,53 @@
+---
+title: Files and directories
+description: What Noket writes to disk, where, and with which permissions.
+sidebar:
+  order: 3
+---
+
+Everything Noket keeps is in one directory: `~/.noket`, or the directory named by
+[`NOKET_CONFIG_DIR`](/reference/environment/). The directory is created with mode `0700`, and the files
+in it are written with mode `0600` (on Windows, the user's ACL replaces these bits).
+
+| File | Written by | Contents |
+| --- | --- | --- |
+| `config.toml` | `noket`, the console, `noketd` | Endpoints, daemon settings, and the upstream list, including upstream API keys. |
+| `credentials.json` | `noket login` | The token for your Noket account. Removed by `noket logout`. |
+| `node.json` | `noketd` | The node id for this machine and account. Created on the first `noket up`. |
+| `noketd.pid` | `noket up` | Process id of a background connector. Not written in foreground mode. |
+| `noketd.log` | `noketd` | Connector log output. Appended to across restarts. |
+| `noketd.status.json` | `noketd` | A snapshot of connection state, node id and name, last error, and counters. Read by `noket status`. |
+
+## Properties
+
+- Every write is atomic: the file is written to a temporary name and renamed, so a crash or a full disk
+  cannot leave a half-written configuration.
+- `config.toml` is the only source of truth for upstreams. The connector does not keep a separate copy.
+- The connector rereads `config.toml` on its heartbeat. A file that fails to parse is reported and the
+  previous configuration stays in use.
+- When a command changes the upstream list, it checks that the file has not changed since it was read.
+  If it has, the command stops rather than overwrite someone else's edit.
+
+## What you can delete
+
+| File | Safe to delete? | What happens |
+| --- | --- | --- |
+| `config.toml` | Only if you want to start over | Upstreams, keys, and endpoint settings are lost. A default file is written on the next command. |
+| `credentials.json` | Yes | You are logged out; `noket login` restores it. |
+| `node.json` | Yes | The machine registers as a new node; models bound to the old node stop working. |
+| `noketd.pid` | Only when no connector is running | A stale pid file is checked against the process, so a leftover file is harmless. |
+| `noketd.log` | Yes | Log output up to that point is lost. |
+| `noketd.status.json` | Yes | `noket status` shows no daemon detail until the connector writes it again. |
+
+## Backing up
+
+To move a machine's setup, stop the connector and copy `config.toml`. Do not copy `node.json`: the node id is
+tied to the account and the machine, and reusing it elsewhere makes two machines compete for one node.
+
+`config.toml` contains upstream keys in plain text. Treat a copy with the same care as a credential file,
+and do not put it in a repository or a shared backup.
+
+## Next
+
+- [Configuration file](/reference/config/)
+- [Security and privacy](/concepts/security-and-privacy/)

@@ -1,0 +1,58 @@
+---
+title: Log in
+description: Approve the CLI login in your browser and save credentials on this machine.
+sidebar:
+  order: 2
+---
+
+`noket` acts on behalf of your Noket account, so the first thing to do after installing is log in.
+
+```bash
+noket login
+```
+
+The command opens your browser at the Noket console and prints the same URL. Approve the request there.
+The CLI waits for the approval, then saves a token to `~/.noket/credentials.json`, readable only by your
+user account. When the browser cannot be opened, copy the printed URL to any device where you are signed
+in to Noket and approve it there.
+
+The login session expires after about ten minutes. If it times out or you deny the request, run the
+command again.
+
+:::note
+The secret for the login flow never appears in the URL or in the browser; the browser only approves an
+id. Treat `credentials.json` like any other credential file.
+:::
+
+## Switching accounts
+
+Running `noket login` again replaces the saved credentials. This is how you switch the machine to a
+different Noket account.
+
+## If the connector is already running
+
+`noketd` reads the login when it starts, so a new login does not affect a running connector. Restart it:
+
+```bash
+noket down
+noket up
+```
+
+If the connector runs under launchd, systemd, or a Scheduled Task, restart it through the supervisor
+instead. `noket login` prints the command to use when it detects a running connector.
+
+## Log out
+
+```bash
+noket logout
+```
+
+This removes `credentials.json` from this machine. It does not revoke the session server-side and does
+not touch your API keys in the console; manage those on the [API keys](/console/api-keys/) page.
+
+`noket logout` refuses to run while `noketd` is running, because the connector would keep using the old
+login until it restarts. Stop the connector first.
+
+## Next
+
+- [Add your first upstream](/connector/upstreams/)

@@ -1,0 +1,107 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'tools/docgen/**'
+      - 'internal/cli/**'
+      - 'internal/config/**'
+      - 'internal/types/**'
+      - 'config.example.toml'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'tools/docgen/**'
+      - 'internal/cli/**'
+      - 'internal/config/**'
+      - 'internal/types/**'
+      - 'config.example.toml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22.23.4
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      # The reference pages are committed, so a command or config change has to
+      # land with its regenerated pages.
+      - name: Reference is up to date
+        run: |
+          go run ./tools/docgen -check
+          go test ./tools/docgen
+
+      - name: Install
+        run: npm ci
+        working-directory: docs
+
+      # Build first: it materializes .nimbus/lint.json (the rule severities) and
+      # .nimbus/routes.json (the route map the internal-link rule checks
+      # against), so lint and check can run their full rule sets.
+      - name: Build
+        run: npm run build
+        working-directory: docs
+
+      - name: Lint content
+        run: npm run lint:docs
+        working-directory: docs
+
+      - name: Check Nimbus scaffold
+        run: npx nimbus-docs check
+        working-directory: docs
+
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: docs
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/dist
+
+  deploy:
+    name: Deploy
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

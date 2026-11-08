@@ -1,0 +1,89 @@
+---
+title: Install Noket
+description: Install noket and noketd on macOS, Linux, or Windows.
+sidebar:
+  order: 1
+---
+
+Noket ships two binaries:
+
+- `noket` — the command-line client for logging in, managing upstreams, and checking status.
+- `noketd` — the background connector that keeps the tunnel open and probes your upstreams.
+
+The installers download the release for your platform, verify its SHA-256 checksum, install both binaries,
+add them to `PATH`, install shell completions, and enable the connector at login.
+
+## Install
+
+On macOS and Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/noket-dev/noket/main/install.sh | bash
+```
+
+On Windows, in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/noket-dev/noket/main/install.ps1 | iex
+```
+
+The default install directory is `~/.local/bin` on macOS and Linux and
+`%LOCALAPPDATA%\Programs\noket` on Windows.
+
+:::note
+Git Bash and MSYS on Windows hand the script off to `install.ps1`. Run the PowerShell command directly
+if you are not sure which shell you are in.
+:::
+
+## Installer options
+
+| Option (macOS/Linux) | Option (Windows) | Effect |
+| --- | --- | --- |
+| `--prefix DIR` | `-InstallDir DIR` | Install into `DIR` instead of the default. |
+| `--version vX.Y.Z` | `-Version vX.Y.Z` | Install a specific release instead of the latest. |
+| `--no-autostart` | `-NoAutostart` | Do not enable the connector at login. |
+| `--no-completion` | `-NoCompletion` | Do not install shell completions. |
+| `--uninstall` | `-Uninstall` | Remove the binaries and the login item. |
+| `--uninstall --purge` | `-Uninstall -Purge` | Also remove `~/.noket`. |
+
+To run the script from a checkout, pass the same flags directly:
+
+```bash
+./install.sh --version v0.1.1 --prefix ~/.local/bin --no-autostart
+```
+
+## What the installer sets up
+
+1. Downloads the archive for your OS and architecture and checks its SHA-256 sum.
+2. Installs `noket` and `noketd` into the chosen directory.
+3. Adds that directory to `PATH` in your shell profile or user environment.
+4. Installs completions for the current shell, when one can be detected.
+5. Enables the connector at login: a launchd user agent on macOS, a systemd user unit on Linux, and a
+   Scheduled Task on Windows. The installer then runs `noket login` when a browser is available; the
+   connector waits for the login instead of exiting.
+
+## Verify
+
+```bash
+noket --version
+noket status
+```
+
+`noket status` shows the config directory, the account, the node id (created on the first `noket up`),
+and whether `noketd` is running. Before you log in, the account section says it is not logged in.
+
+If the shell cannot find `noket`, open a new terminal or source the profile the installer updated, then
+try again.
+
+## Manual installation
+
+Release archives are on the [releases page](https://github.com/noket-dev/noket/releases). Each archive
+contains both binaries and a checksum file. Unpack it, put both binaries somewhere on `PATH`, and
+continue with [Log in](/connector/login/). Autostart and completions are optional; see
+[Run as a service](/connector/run-as-service/) and the shell completion commands in the
+[CLI reference](/reference/cli/completion/).
+
+## Next
+
+- [Log in](/connector/login/)
+- [Add your first upstream](/connector/upstreams/)

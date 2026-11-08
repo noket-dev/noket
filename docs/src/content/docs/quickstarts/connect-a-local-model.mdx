@@ -1,0 +1,104 @@
+---
+title: Connect a local model
+description: Expose an LLM server on your machine through the Noket tunnel and share it.
+sidebar:
+  order: 4
+---
+
+This path is for the person whose machine runs the model. The Noket connector dials out to Noket and
+carries requests back down that connection, so your machine never accepts inbound traffic and your
+upstream key never leaves it.
+
+You need a machine that stays on while people use the model, and an LLM server reachable from that
+machine. Ollama, vLLM, LM Studio, and any OpenAI- or Anthropic-compatible API work.
+
+## 1. Install and log in
+
+On macOS and Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/noket-dev/noket/main/install.sh | bash
+```
+
+On Windows, in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/noket-dev/noket/main/install.ps1 | iex
+```
+
+The installer puts `noket` and `noketd` on `PATH`, installs shell completions, and enables the connector
+at login. It then starts `noket login`, which opens the browser for approval. Check the result with:
+
+```bash
+noket status
+```
+
+The account section reports whether you are logged in and the connector whether it is running. See
+[Install Noket](/connector/install/) and [Log in](/connector/login/) for the details and manual options.
+
+## 2. Start your LLM server
+
+Use the server you already run. A few common ones and their default addresses:
+
+| Server | Default base URL | Protocol |
+| --- | --- | --- |
+| [Ollama](/connector/local-models/ollama/) | `http://127.0.0.1:11434` | `openai` |
+| [vLLM](/connector/local-models/vllm/) | `http://127.0.0.1:8000` | `openai` |
+| [LM Studio](/connector/local-models/lm-studio/) | `http://127.0.0.1:1234` | `openai` |
+| [Anthropic-compatible](/connector/local-models/anthropic-compatible/) | varies | `anthropic` |
+
+Load at least one model and note its model id.
+
+## 3. Add an upstream
+
+```bash
+noket upstream add
+```
+
+Fill in a name, the protocol, the base URL, and a key if the server needs one. The form probes
+`{base_url}/v1/models` and offers the model ids it finds; you can also type an id by hand. The key is
+read from standard input, never from an argument.
+
+Check what the connector will serve:
+
+```bash
+noket upstream test your-upstream-name
+```
+
+The probe lists models without running a generation. See [Your first upstream](/connector/upstreams/) for
+non-interactive examples and the field rules.
+
+## 4. Start the tunnel
+
+```bash
+noket up
+```
+
+The connector registers a node — one per machine — and keeps a WebSocket open to Noket. The command prints
+the process id, the node id and name, and the log path. If the installer enabled the login item,
+`noketd` is already running; `noket up` reports the existing process rather than starting a second
+one.
+
+## 5. Create the model
+
+The tunnel carries requests, but people call a model, not an upstream. In the console, open
+[Models](https://noket.dev/models), choose **Add model**, and select **Tunnel node**. Pick your node,
+then one of the upstream model ids it reports.
+
+Give the model a slug. Its public id becomes `your-username/your-slug`. Set a budget now if you plan to
+share it — you pay for the requests other people make.
+
+See [Add a model](/console/models/add-model/) and [Budgets and limits](/console/models/budget/).
+
+## 6. Share or call it
+
+- To use it yourself, create an [API key](/console/api-keys/) and call the model id at
+  `https://api.noket.dev`.
+- To share it, open the **Members** dialog and add people or invite them by email. Follow
+  [Share your models](/quickstarts/share-your-models/) from step 2.
+
+## Next
+
+- [How the tunnel works](/concepts/how-the-tunnel-works/)
+- [Run as a service](/connector/run-as-service/)
+- [Run a local server](/connector/local-models/)

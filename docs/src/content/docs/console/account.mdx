@@ -1,0 +1,38 @@
+---
+title: Account
+description: Email, verification, sessions, and where your data goes.
+sidebar:
+  order: 6
+---
+
+[Account](https://noket.dev/account) holds the details of your Noket account.
+
+## Email and verification
+
+Your email address identifies the account and receives invitations. Changing it requires verifying the
+new address. If you had pending invitations sent to the old address, confirm them again after the
+change.
+
+Verification confirms that the address belongs to you. It is not an identity check.
+
+## Sessions
+
+The account page lists the sessions signed in to the console: the current device, the last sign-in,
+and actions to sign out the current device or all devices.
+
+Signing out of every device ends console sessions immediately. It does not delete API keys, and it does
+not remove the credentials on a machine where you ran `noket login` — use
+[`noket logout`](/connector/login/#log-out) there, and delete keys on
+[API keys](/console/api-keys/) if they are compromised.
+
+## Data and privacy
+
+Requests made through Noket pass through Noket and are forwarded to the upstream that serves the model.
+Request bodies are not persisted by default, and logs do not contain secrets. See
+[Security and privacy](/concepts/security-and-privacy/) for the full picture, including what stays on
+your machine.
+
+## Next
+
+- [Security and privacy](/concepts/security-and-privacy/)
+- [Usage](/console/usage/)

@@ -1,0 +1,113 @@
+---
+title: Use a shared model
+description: Accept access to someone's model, create an API key, and make a request.
+sidebar:
+  order: 2
+---
+
+Someone who owns a model can give your account access to it. Once you have access, you call the model
+with your own Noket API key, using the OpenAI or Anthropic SDK — the owner's credentials are never
+involved.
+
+## Before you start
+
+You need a Noket account and either an invitation link or the email address the owner added. If the
+owner shared with your existing account, the model is already waiting for you.
+
+## 1. Sign in or accept the invitation
+
+Sign in at [noket.dev/login](https://noket.dev/login). If you received an invitation link of the form
+`/invite/<token>`, open it while signed in. The link works once, and the access it grants can expire —
+the model's page tells you when.
+
+See [Sign in](/console/sign-in/) for verification and sessions.
+
+## 2. Find the model and its id
+
+Open [Models](https://noket.dev/models). Models you did not create are marked **Shared**. Open the
+model and look at **Calling configuration**: it shows the model id, the base URL, your spent and
+available budget, and when your access ends.
+
+The id is `owner-username/slug`, for example `alice/llama-3.1-8b`. That is the value you pass as
+`model` in a request. Ask the owner which API format the model uses — OpenAI or Anthropic — if it is
+not shown on the model.
+
+## 3. Create an API key
+
+1. Open [API keys](https://noket.dev/api-keys) and choose **Create key**.
+2. Name it after where it will run, for example `laptop` or `prod-backend`.
+3. Copy the value from the dialog. It is shown once.
+
+A key belongs to your account and can call every model your account can call, including every model
+shared with you. It does not have its own spending limit; your limit is the one the owner set for you,
+plus the model's own budget.
+
+See [API keys](/console/api-keys/) for renaming, deleting, and what happens when access changes.
+
+## 4. Make a request
+
+For an OpenAI-format model:
+
+```bash
+curl https://api.noket.dev/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "alice/llama-3.1-8b",
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
+```
+
+For an Anthropic-format model:
+
+```bash
+curl https://api.noket.dev/anthropic/v1/messages \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "alice/claude-sonnet",
+    "max_tokens": 256,
+    "messages": [{"role": "user", "content": "Hello"}]
+  }'
+```
+
+To use an SDK, point it at Noket instead of the provider:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.noket.dev/v1",
+    api_key="YOUR_API_KEY",
+)
+
+reply = client.chat.completions.create(
+    model="alice/llama-3.1-8b",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+```
+
+See [API](/api/) for the route list, error shapes, and more examples.
+
+## 5. Watch your usage
+
+[Usage](https://noket.dev/usage) shows what you have called and what it cost. As a member, you see
+your own requests only. If a request fails because your budget or the model's budget is exhausted, the
+API refuses it with `429`; the model page shows the spent amount and, for a periodic budget, when it
+resets.
+
+## If something fails
+
+| Response | Meaning | What to do |
+| --- | --- | --- |
+| `401` | Missing or incorrect API key | Copy the key again from API keys. |
+| `404` with `model_not_found` | The id is wrong, or your access ended | Check the id on the model page; ask the owner about access. |
+| `429` | A rate limit or a budget is exhausted | Check the model page; wait for the period to reset or ask the owner. |
+| `502` or `504` | The machine or API behind the model failed | Try again; the owner can check [Logs](/console/logs/). |
+
+## Next
+
+- [API authentication](/api/authentication/)
+- [Errors and limits](/api/errors/)
+- [Usage](/console/usage/)

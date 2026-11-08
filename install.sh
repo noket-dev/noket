@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
 # install.sh installs noket and noketd, puts them on PATH, and enables the
-# noket agent at login.
+# noket connector at login.
 #
-# macOS:   launchd user agent (~/Library/LaunchAgents/dev.noket.agent.plist)
+# macOS:   launchd user agent (~/Library/LaunchAgents/dev.noket.connector.plist)
 # Linux:   systemd user unit (~/.config/systemd/user/noket.service)
 # Windows: Git Bash / MSYS hands off to install.ps1; native Windows users
 #          should run the PowerShell one-liner written by --help.
@@ -17,7 +17,7 @@ set -euo pipefail
 
 REPO="noket-dev/noket"
 REF="${NOKET_INSTALL_REF:-main}"
-SERVICE_LABEL="dev.noket.agent"
+SERVICE_LABEL="dev.noket.connector"
 SERVICE_UNIT="noket.service"
 MARKER_BEGIN="# noket"
 MARKER_END="# noket end"
@@ -77,7 +77,7 @@ die() {
 
 usage() {
 	cat <<'EOF'
-Install noket and enable the background agent at login.
+Install noket and enable the background connector at login.
 
 Usage:
   install.sh [options]
@@ -86,10 +86,10 @@ Usage:
 Options:
   --version vX.Y.Z   install a specific release (default: latest)
   --prefix DIR       install directory for the binaries (default: ~/.local/bin)
-  --no-autostart     install the binaries but do not enable the agent at login
+  --no-autostart     install the binaries but do not enable the connector at login
   --no-login         skip the interactive browser login
   --no-completion    do not install shell completions
-  --uninstall        stop and remove the agent, binaries, and shell setup
+  --uninstall        stop and remove the connector, binaries, and shell setup
   --purge            with --uninstall, also remove ~/.noket (credentials, config)
   -h, --help         show this help
 
@@ -515,7 +515,7 @@ maybe_login() {
 			warn "login did not finish; run 'noket login' later"
 		fi
 	else
-		warn "no login found; run 'noket login' before the agent can connect"
+		warn "no login found; run 'noket login' before the connector can connect"
 	fi
 }
 
@@ -585,9 +585,9 @@ EOF
 
 	launchctl bootout "gui/$uid/$SERVICE_LABEL" >/dev/null 2>&1 || true
 	if launchctl bootstrap "gui/$uid" "$plist" >/dev/null 2>&1; then
-		step "Agent enabled (launchd: $SERVICE_LABEL); it starts at login"
+		step "Connector enabled (launchd: $SERVICE_LABEL); it starts at login"
 	elif launchctl load -w "$plist" >/dev/null 2>&1; then
-		step "Agent enabled (launchd: $SERVICE_LABEL); it starts at login"
+		step "Connector enabled (launchd: $SERVICE_LABEL); it starts at login"
 	else
 		warn "saved $plist, but launchd is unreachable now; it loads at the next login"
 	fi
@@ -604,7 +604,7 @@ linux_user_unit() {
 
 	cat >"$unit" <<EOF
 [Unit]
-Description=Noket tunnel agent
+Description=Noket connector
 Documentation=https://docs.noket.dev
 After=network-online.target
 Wants=network-online.target
@@ -623,18 +623,18 @@ EOF
 
 	systemctl --user daemon-reload >/dev/null 2>&1 || true
 	if systemctl --user enable "$SERVICE_UNIT" >/dev/null 2>&1; then
-		step "Agent enabled (systemd user unit: $SERVICE_UNIT)"
+		step "Connector enabled (systemd user unit: $SERVICE_UNIT)"
 	else
 		warn "could not enable $SERVICE_UNIT now; enable it with: systemctl --user enable $SERVICE_UNIT"
 	fi
 
 	if ! systemctl --user restart "$SERVICE_UNIT" >/dev/null 2>&1; then
-		warn "could not start the agent now; start it with: systemctl --user start $SERVICE_UNIT"
+		warn "could not start the connector now; start it with: systemctl --user start $SERVICE_UNIT"
 	fi
 
 	# Without linger a user unit starts at login, not at boot.
 	if ! loginctl enable-linger "$(id -un)" >/dev/null 2>&1; then
-		warn "could not enable linger; the agent starts at login instead of at boot"
+		warn "could not enable linger; the connector starts at login instead of at boot"
 	fi
 }
 
@@ -647,7 +647,7 @@ linux_system_unit() {
 
 	cat >"$unit" <<EOF
 [Unit]
-Description=Noket tunnel agent
+Description=Noket connector
 Documentation=https://docs.noket.dev
 After=network-online.target
 Wants=network-online.target
@@ -666,7 +666,7 @@ EOF
 
 	systemctl daemon-reload >/dev/null 2>&1 || true
 	if systemctl enable --now "$SERVICE_UNIT" >/dev/null 2>&1; then
-		step "Agent enabled (systemd system unit: $SERVICE_UNIT); it starts at boot"
+		step "Connector enabled (systemd system unit: $SERVICE_UNIT); it starts at boot"
 	else
 		warn "could not start $SERVICE_UNIT; start it with: systemctl start $SERVICE_UNIT"
 	fi
@@ -688,11 +688,11 @@ configure_autostart() {
 				linux_user_unit
 			fi
 		else
-			warn "systemd not found; autostart skipped. Start the agent with: $DEST/noket up"
+			warn "systemd not found; autostart skipped. Start the connector with: $DEST/noket up"
 		fi
 		;;
 	freebsd)
-		warn "no autostart integration for FreeBSD; start the agent with: $DEST/noket up"
+		warn "no autostart integration for FreeBSD; start the connector with: $DEST/noket up"
 		;;
 	esac
 }
@@ -830,15 +830,15 @@ finish() {
 		say ""
 		case "$OS" in
 		darwin)
-			say "The agent starts at login and reconnects automatically."
+			say "The connector starts at login and reconnects automatically."
 			say "Logs: $(config_dir)/noketd.log"
 			;;
 		linux)
 			if [ "$(id -u)" -eq 0 ]; then
-				say "The agent starts at boot and reconnects automatically."
+				say "The connector starts at boot and reconnects automatically."
 				say "Logs: journalctl -u $SERVICE_UNIT -f"
 			else
-				say "The agent starts at login (at boot with linger) and reconnects automatically."
+				say "The connector starts at login (at boot with linger) and reconnects automatically."
 				say "Logs: journalctl --user -u $SERVICE_UNIT -f"
 			fi
 			;;
@@ -847,7 +847,7 @@ finish() {
 
 	if [ "$DO_AUTOSTART" = 1 ] && [ ! -f "$(config_dir)/credentials.json" ]; then
 		say ""
-		say "The agent waits until you run: noket login"
+		say "The connector waits until you run: noket login"
 	fi
 }
 

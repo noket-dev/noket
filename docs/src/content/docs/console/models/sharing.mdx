@@ -1,0 +1,71 @@
+---
+title: Share a model
+description: Add members, send invitations, and revoke access.
+sidebar:
+  order: 4
+---
+
+A model's owner can share it with other Noket accounts. Shared models appear in the other account's
+model list marked **Shared**.
+
+Open the **Members** dialog from a model card on [Models](https://noket.dev/models) or from the model's
+detail page.
+
+## Add a member
+
+**Add member** grants access to an account that already exists. Enter a username or email address —
+the console resolves it — then choose:
+
+- **Role**: Admin or Member. Only the owner can grant Admin.
+- **Access expires**: 1 day, 1 week, 1 month, 1 year, or never.
+- **Limits**: an amount budget, a token limit, and a request limit, each with its own period. Leaving
+  them blank means the member gets no extra limit.
+
+**Review** restates the account, role, and expiry date before anything is committed. If the account
+does not exist or cannot be added, you get an error; the console does not silently turn it into an
+invitation.
+
+## Invite by email
+
+**Invite** uses the same fields as adding a member, plus the email address to send the link to. The
+invitation link is valid for 7 days and can be copied from the dialog. The role, expiry, and limits you
+set are stored with the invitation and take effect when it is accepted.
+
+The console shows whether the email went out. If it did not, copy the link and send it yourself.
+
+## Pending invitations
+
+Invitations that have not been accepted are listed below the members with the email address, role,
+link expiry, access expiry, and limits. From the row menu you can resend, edit, or revoke:
+
+- **Resend** issues a new link. The platform stores only a digest of the token, so the original link
+  cannot be shown again; the old link stops working immediately and the 7-day expiry restarts.
+- **Edit** changes the role (owner only), limits, and access expiry. The link stays the same and keeps
+  its original expiry date.
+- **Revoke** invalidates the invitation.
+
+At most 50 invitations can be pending for one model. To send another, revoke one first.
+
+An invitation can be accepted once. Accepting it creates access but does not create an API key — any
+key in the invited account can call the model once access exists.
+
+## Members list
+
+Each row shows the member, when their access expires (or *Never*), their limits with usage, their role,
+and their status: active, expired, or revoked. Expired status is derived from the access expiry date.
+
+From the row menu you can edit a member's role, limits, and expiry, or remove the member. Removing asks
+for confirmation.
+
+## What revocation does
+
+Revoking or removing a member immediately removes that account's access to this model. Every API key in
+that account loses the model; other models are unaffected. The account's key is not deleted, and no
+spent amounts are cleared.
+
+The same applies to you: leaving a shared model from its card ends your access for all your keys.
+
+## Next
+
+- [Budgets and limits](/console/models/budget/)
+- [API keys](/console/api-keys/)

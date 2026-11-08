@@ -1,0 +1,44 @@
+---
+title: Console
+description: Manage models, API keys, usage, logs, and tunnel nodes at noket.dev.
+sidebar:
+  order: 0
+  label: Overview
+---
+
+The console at [noket.dev](https://noket.dev) is where you turn what the connector exposes into something
+your applications can call: models, API keys, sharing, budgets, usage, and logs.
+
+| Page | What it is for |
+| --- | --- |
+| [Models](/console/models/) | Create a model backed by an external API or by an upstream on one of your nodes. |
+| [API keys](/console/api-keys/) | Issue keys for your applications and SDKs. |
+| [Usage](/console/usage/) | Cost, requests, tokens, latency, and per-model totals. |
+| [Logs](/console/logs/) | Individual requests, with status, model, and timings. |
+| [Tunnel → Nodes](/console/tunnel/nodes/) | The machines running `noketd`, and whether they are connected. |
+| [Tunnel → Upstreams](/console/tunnel/upstreams/) | What each node is serving. |
+| [Account](/console/account/) | Your email, verification, and active sessions. |
+
+## Models and sources
+
+A **model** is the thing you call with an API key. It has a source:
+
+- **External API** — Noket forwards to an API you configure in the console.
+- **Tunnel node** — Noket forwards through the tunnel to an upstream on one of your machines.
+
+Tunnel models are the ones this documentation mostly covers, because they depend on the CLI and the
+connector. External API models need no software on your side.
+
+## How the pieces fit together
+
+1. `noketd` connects this machine to Noket and exposes the model ids from its upstreams.
+2. The console sees the node and the models it can serve.
+3. You create a model in the console that points at one of those upstream models.
+4. You issue an API key and call the model with it.
+
+The [CLI](/reference/cli/) manages steps 1 and 2. The console manages steps 3 and 4.
+
+## Next
+
+- [Sign in](/console/sign-in/)
+- [Models](/console/models/)

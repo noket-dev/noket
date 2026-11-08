@@ -1,0 +1,56 @@
+---
+title: Model details
+description: Calling configuration, limits, members, and settings for one model.
+sidebar:
+  order: 3
+---
+
+Open a model from [Models](https://noket.dev/models) to reach its detail page. The same page serves
+owners and people the model is shared with; what you see depends on your role.
+
+## If you own the model
+
+The header shows the name, state, and source. The tabs are:
+
+- **Calling configuration** — spent and available budget; the base URL, model slug, and an SSE example;
+  a summary of prices and budget.
+- **Quota** — the model's total budget and each member's budget, edited in place. Concurrency, request
+  rate, and maximum output are listed separately as call protection.
+- **Members and sharing** — the **Members** button on the card opens the member dialog;
+  see [Share a model](/console/models/sharing/).
+- **Settings** — edit, test again, pause or resume, and delete.
+
+The base URL and slug shown here are what your applications use. A full request looks like an
+OpenAI-compatible call:
+
+```bash
+curl https://api.noket.dev/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "your-username/your-slug", "messages": [{"role": "user", "content": "Hello"}]}'
+```
+
+For an Anthropic-protocol model, call `/v1/messages` with the `x-api-key` header instead. If the
+protocol is not obvious from the model, check the API format shown on the model or use the example the
+console provides.
+
+## If the model is shared with you
+
+The **Calling configuration** tab shows your spent and available budget, when your access expires, and
+the address, slug, and a cURL example. Your own budget and its period appear next to it. The **My usage**
+tab opens usage for this model limited to your requests.
+
+## State messages
+
+- **Draft** — the owner can inspect the configuration and test it; nobody can call it.
+- **Paused** — new requests are refused; the owner can resume.
+- **Access expired or revoked** — you see a read-only notice. Other models are unaffected.
+- **Budget exhausted** — the page shows what was spent against the limit, and for a periodic budget
+  when it resets.
+- **Cost unknown** — when the gateway reports no cost or usage, the console says the cost is unknown
+  or that there are no details. It does not show unknown cost as zero.
+
+## Next
+
+- [Share a model](/console/models/sharing/)
+- [Budgets and limits](/console/models/budget/)

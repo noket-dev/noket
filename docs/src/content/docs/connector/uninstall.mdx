@@ -1,0 +1,43 @@
+---
+title: Uninstall
+description: Remove the binaries, the login item, and optionally local state.
+sidebar:
+  order: 7
+---
+
+Use the installer with `--uninstall`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/noket-dev/noket/main/install.sh | bash -s -- --uninstall
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/noket-dev/noket/main/install.ps1))) -Uninstall
+```
+
+This stops and removes the login item, then deletes `noket` and `noketd` from the install directory.
+It leaves your configuration and credentials in place.
+
+To remove those as well, add `--purge` (`-Purge` on Windows). That deletes the [config directory](/reference/files/)
+— `config.toml`, `credentials.json`, the node id, and logs.
+
+:::caution
+`--purge` removes the node id. A later install will register as a new node, and the old node stays in
+the console until you remove it. The upstream API keys stored in `config.toml` go with it.
+:::
+
+## Before you remove a machine
+
+If the node is listed in the console, remove it there too, under
+[Console → Tunnel → Nodes](/console/tunnel/nodes/). Models that point at that node will stop working,
+so check [Models](/console/models/) for anything using it.
+
+## Manual uninstall
+
+1. Stop the connector: `noket down`, or stop the supervisor's unit or task.
+2. Remove the login item:
+   - macOS: `launchctl bootout "gui/$UID/dev.noket.connector"` and delete `~/Library/LaunchAgents/dev.noket.connector.plist`.
+   - Linux: `systemctl --user disable --now noket.service` and delete `~/.config/systemd/user/noket.service`.
+   - Windows: `Unregister-ScheduledTask -TaskName Noket -Confirm:$false`.
+3. Delete the `noket` and `noketd` binaries.
+4. Optionally delete the config directory, then remove the install directory from `PATH`.

@@ -1,0 +1,60 @@
+---
+title: Upstreams
+description: See and manage the upstreams each node serves.
+sidebar:
+  order: 2
+---
+
+[Tunnel → Upstreams](https://noket.dev/tunnel/upstreams) shows the upstreams each node has reported:
+their names, protocols, base URLs, and the model ids they expose. This is the list the console offers
+when you [bind a model to a node](/console/models/add-model/).
+
+## Where the data comes from
+
+The upstream list lives in `config.toml` on the machine, and the connector reports it over the tunnel. The
+console does not keep a copy on the server; when the node is offline, the page says so rather than
+showing an old snapshot.
+
+You can change upstreams from either side:
+
+- On the machine with [`noket upstream`](/reference/cli/upstream/) or the [terminal UI](/connector/tui/).
+- In the console, which asks the connector to make the change. The connector validates it, writes
+  `config.toml`, and reloads without a restart.
+
+Both paths write the same file. If an edit on the machine races a change from the console, Noket
+detects the stale write and refuses it instead of overwriting the newer file.
+
+Console editing needs the node to be online. Adding, editing, and deleting all happen on the node;
+the server only routes the request to the connector.
+
+## Adding an upstream here
+
+To add one, the console asks for the protocol, base URL, and an optional key, and then probes the
+server for model ids. The key is used for that request and written to the node's local configuration.
+It is not stored by the service, and it does not appear in logs.
+
+If the base URL does not change while editing, leaving the key field blank keeps the stored key.
+Changing the address requires a new key or an explicit instruction to clear it, so a key is never sent
+to an address it was not meant for.
+
+## Reference protection
+
+An upstream that a model in the console is bound to cannot be deleted, and its models cannot be
+removed, until that binding goes away. The error names the model and the upstream, never a key.
+
+## If something looks wrong
+
+Check on the machine:
+
+```bash
+noket upstream list
+noket status
+```
+
+A fresh upstream can take a moment to appear, since the console reads it from the node. If the node is
+offline, the console cannot show or change anything until it reconnects.
+
+## Next
+
+- [Nodes](/console/tunnel/nodes/)
+- [Manage upstreams](/reference/cli/upstream/)
