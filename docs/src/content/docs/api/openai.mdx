@@ -66,8 +66,8 @@ a field, the provider rejects the request and Noket returns `400` with `upstream
 
 For safety, Noket removes fields that would let a client choose a provider or supply its own
 credentials — `provider`, `providers`, `fallback`, `fallbacks`, `routing`, `route`, `virtual_key`,
-`api_key`, `base_url`, `headers`, `extra_fields`, `_bifrost`, `bifrost`, and headers prefixed
-`x-bf-` or `x-bifrost-`. The model's stored configuration decides those, not the request.
+`api_key`, `base_url`, `headers`, and `extra_fields`. The model's stored configuration decides those,
+not the request.
 
 ## Streaming
 
