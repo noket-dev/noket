@@ -22,7 +22,7 @@
       inherit version;
       src = pkgs.lib.cleanSource self;
 
-      vendorHash = "sha256-paSoYx4sjne19pABKZjLHjBbofBQL+IvSDgvtePFy2A=";
+      vendorHash = "sha256-kO4DUilm1Fk5d7OmY1frzuN0LO8B7XGzjU3BOIo7gYc=";
 
       subPackages = ["cmd/noket" "cmd/noketd"];
 
